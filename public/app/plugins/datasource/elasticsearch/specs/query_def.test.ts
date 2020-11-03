@@ -122,6 +122,14 @@ describe('ElasticQueryDef', () => {
         expect(result).toBe(false);
       });
     });
+
+    describe('scripted_metric', () => {
+      const result = queryDef.isPipelineAgg('scripted_metric');
+
+      test('is not pipe line metric', () => {
+        expect(result).toBe(false);
+      });
+    });
   });
 
   describe('isPipelineAggWithMultipleBucketPaths', () => {
@@ -135,6 +143,14 @@ describe('ElasticQueryDef', () => {
 
     describe('moving_avg', () => {
       const result = queryDef.isPipelineAggWithMultipleBucketPaths('moving_avg');
+
+      test('should not have multiple bucket paths support', () => {
+        expect(result).toBe(false);
+      });
+    });
+
+    describe('scripted_metric', () => {
+      const result = queryDef.isPipelineAggWithMultipleBucketPaths('scripted_metric');
 
       test('should not have multiple bucket paths support', () => {
         expect(result).toBe(false);
@@ -157,13 +173,51 @@ describe('ElasticQueryDef', () => {
 
     describe('using esversion 2', () => {
       test('should get pipeline aggs', () => {
-        expect(queryDef.getMetricAggTypes(2).length).toBe(15);
+        expect(queryDef.getMetricAggTypes(2).length).toBe(16);
       });
     });
 
     describe('using esversion 5', () => {
       test('should get pipeline aggs', () => {
-        expect(queryDef.getMetricAggTypes(5).length).toBe(15);
+        expect(queryDef.getMetricAggTypes(5).length).toBe(16);
+      });
+    });
+  });
+
+  describe('scripted metric agg parameters depending on esverison', () => {
+    describe('using esversion undefined', () => {
+      test('scripted metric aggs requires all three parameters', () => {
+        const response = queryDef.getScriptedMetricParams(undefined);
+        expect(response).toEqual([
+          { required: false, text: 'Init', value: 'init_script' },
+          { required: true, text: 'Map', value: 'map_script' },
+          { required: true, text: 'Combine', value: 'combine_script' },
+          { required: true, text: 'Reduce', value: 'reduce_script' },
+        ]);
+      });
+    });
+
+    describe('using esversion before 7.0', () => {
+      test('scripted metric aggs requires only map_script parameters', () => {
+        const response = queryDef.getScriptedMetricParams(60);
+        expect(response).toEqual([
+          { required: false, text: 'Init', value: 'init_script' },
+          { required: true, text: 'Map', value: 'map_script' },
+          { required: false, text: 'Combine', value: 'combine_script' },
+          { required: false, text: 'Reduce', value: 'reduce_script' },
+        ]);
+      });
+    });
+
+    describe('using esversion after 7.0', () => {
+      test('scripted metric aggs requires all three parameters', () => {
+        const response = queryDef.getScriptedMetricParams(70);
+        expect(response).toEqual([
+          { required: false, text: 'Init', value: 'init_script' },
+          { required: true, text: 'Map', value: 'map_script' },
+          { required: true, text: 'Combine', value: 'combine_script' },
+          { required: true, text: 'Reduce', value: 'reduce_script' },
+        ]);
       });
     });
   });

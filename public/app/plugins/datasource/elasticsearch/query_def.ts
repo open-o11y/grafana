@@ -52,6 +52,12 @@ export const metricAggTypes = [
     supportsMissing: true,
   },
   {
+    text: 'Scripted Metric',
+    value: 'scripted_metric',
+    requiresField: false,
+    minVersion: 2,
+  },
+  {
     text: 'Moving Average',
     value: 'moving_avg',
     requiresField: false,
@@ -91,6 +97,13 @@ export const bucketAggTypes = [
   { text: 'Geo Hash Grid', value: 'geohash_grid', requiresField: true },
   { text: 'Date Histogram', value: 'date_histogram', requiresField: true },
   { text: 'Histogram', value: 'histogram', requiresField: true },
+];
+
+export const scriptedMetricParams = [
+  { text: 'Init', value: 'init_script' },
+  { text: 'Map', value: 'map_script' },
+  { text: 'Combine', value: 'combine_script' },
+  { text: 'Reduce', value: 'reduce_script' },
 ];
 
 export const orderByOptions = [
@@ -228,6 +241,24 @@ export function getPipelineAggOptions(target: ElasticsearchQuery, metric?: Elast
   }
   const ancestors = getAncestors(target, metric);
   return metrics.filter(m => !ancestors.includes(m.id)).map(m => ({ text: describeMetric(m), value: m.id }));
+}
+
+export function getScriptedMetricParams(esVersion: any) {
+  return _.map(scriptedMetricParams, param => {
+    let required;
+    switch (param.value) {
+      case 'map_script':
+        required = true;
+        break;
+      case 'combine_script':
+      case 'reduce_script':
+        required = typeof esVersion === 'number' ? esVersion >= 70 : true;
+        break;
+      default:
+        required = false;
+    }
+    return { ...param, required };
+  });
 }
 
 export function getMovingAvgSettings(model: any, filtered: boolean) {

@@ -15,6 +15,7 @@ export class ElasticMetricAggCtrl {
     const metricAggs: ElasticsearchAggregation[] = $scope.target.metrics;
     $scope.metricAggTypes = queryDef.getMetricAggTypes($scope.esVersion);
     $scope.extendedStats = queryDef.extendedStats;
+    $scope.scriptedMetricParams = queryDef.getScriptedMetricParams($scope.esVersion);
     $scope.pipelineAggOptions = [];
     $scope.modelSettingsValues = {};
 
@@ -99,6 +100,10 @@ export class ElasticMetricAggCtrl {
           $scope.settingsLinkText = 'Stats: ' + stats.join(', ');
           break;
         }
+        case 'scripted_metric': {
+          $scope.settingsLinkText = 'Scripts';
+          break;
+        }
         case 'moving_avg': {
           $scope.movingAvgModelTypes = queryDef.movingAvgModelOptions;
           $scope.modelSettings = queryDef.getMovingAvgSettings($scope.agg.settings.model, true);
@@ -175,7 +180,11 @@ export class ElasticMetricAggCtrl {
       ) {
         $scope.target.bucketAggs = [queryDef.defaultBucketAgg()];
       }
-
+      if ($scope.agg.type === 'scripted_metric') {
+        // show because some options are required
+        $scope.showOptions = true;
+        delete $scope.agg.field;
+      }
       $scope.showVariables = queryDef.isPipelineAggWithMultipleBucketPaths($scope.agg.type);
       $scope.updatePipelineAggOptions();
       $scope.onChange();
