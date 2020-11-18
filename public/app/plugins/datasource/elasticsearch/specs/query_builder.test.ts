@@ -615,7 +615,7 @@ describe('ElasticQueryBuilder', () => {
           const query = builder.buildPPLQuery(target, null, 'source=test');
 
           const expectedQuery = {
-            query: "source=test | where `$timestamp`> timestamp('$timeFrom') and `$timestamp` < timestamp('$timeTo')",
+            query: "source=test | where $timestamp > timestamp('$timeFrom') and $timestamp < timestamp('$timeTo')",
           };
           expect(query).toEqual(expectedQuery);
           expect(target.isLogsQuery).toEqual(true);
@@ -626,7 +626,7 @@ describe('ElasticQueryBuilder', () => {
 
           const expectedQuery = {
             query:
-              "source=test | where `$timestamp`> timestamp('$timeFrom') and `$timestamp` < timestamp('$timeTo') | where age > 18 | fields firstname",
+              "source=test | where $timestamp > timestamp('$timeFrom') and $timestamp < timestamp('$timeTo') | where age > 18 | fields firstname",
           };
           expect(query).toEqual(expectedQuery);
         });
@@ -640,7 +640,7 @@ describe('ElasticQueryBuilder', () => {
 
           const expectedQuery = {
             query:
-              "source=test | where `$timestamp`> timestamp('$timeFrom') and `$timestamp` < timestamp('$timeTo') | where key1='value1' and key2<50",
+              "source=test | where $timestamp > timestamp('$timeFrom') and $timestamp < timestamp('$timeTo') | where key1='value1' and key2<50",
           };
           expect(query).toEqual(expectedQuery);
         });
@@ -657,7 +657,7 @@ describe('ElasticQueryBuilder', () => {
           const query = builder.buildPPLQuery(target, null, 'source=test');
 
           const expectedQuery = {
-            query: "source=test | where `$timestamp`> timestamp('$timeFrom') and `$timestamp` < timestamp('$timeTo')",
+            query: "source=test | where $timestamp > timestamp('$timeFrom') and $timestamp < timestamp('$timeTo')",
           };
           expect(query).toEqual(expectedQuery);
           expect(target.isLogsQuery).toEqual(false);
@@ -672,7 +672,7 @@ describe('ElasticQueryBuilder', () => {
 
           const expectedQuery = {
             query:
-              "source=test | where `$timestamp`> timestamp('$timeFrom') and `$timestamp` < timestamp('$timeTo') | where key1='value1' and key2<50",
+              "source=test | where $timestamp > timestamp('$timeFrom') and $timestamp < timestamp('$timeTo') | where key1='value1' and key2<50",
           };
           expect(query).toEqual(expectedQuery);
         });
