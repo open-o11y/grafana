@@ -299,6 +299,10 @@ export function defaultBucketAgg() {
   return { type: 'date_histogram', id: '2', settings: { interval: 'auto' } };
 }
 
+export function defaultPPLFormat() {
+  return 'table';
+}
+
 export const findMetricById = (metrics: any[], id: any) => {
   return _.find(metrics, { id: id });
 };

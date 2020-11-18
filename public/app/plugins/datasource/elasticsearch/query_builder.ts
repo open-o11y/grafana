@@ -1,5 +1,5 @@
 import * as queryDef from './query_def';
-import { ElasticsearchAggregation } from './types';
+import { ElasticsearchAggregation, ElasticsearchQueryType } from './types';
 
 export class ElasticQueryBuilder {
   timeField: string;
@@ -187,6 +187,7 @@ export class ElasticQueryBuilder {
     // make sure query has defaults;
     target.metrics = target.metrics || [queryDef.defaultMetricAgg()];
     target.bucketAggs = target.bucketAggs || [queryDef.defaultBucketAgg()];
+    target.queryType = ElasticsearchQueryType.Lucene;
     target.timeField = this.timeField;
 
     let i, j, pv, nestedAggs, metric;
@@ -418,5 +419,59 @@ export class ElasticQueryBuilder {
       ...query,
       aggs: this.build(target, null, querystring).aggs,
     };
+  }
+
+  addPPLAdhocFilters(queryString: any, adhocFilters: any) {
+    let i, adhocquery;
+    let filter = [];
+
+    for (i = 0; i < adhocFilters.length; i++) {
+      filter.push(adhocFilters[i].key);
+      if (typeof adhocFilters[i].value === 'string') {
+        filter.push("'" + adhocFilters[i].value + "'");
+      } else {
+        filter.push(adhocFilters[i].value);
+      }
+      adhocquery = filter.join(adhocFilters[i].operator);
+      if (i > 0) {
+        queryString += ' and ' + adhocquery;
+      } else {
+        queryString += ' | where ' + adhocquery;
+      }
+      filter = [];
+    }
+    return queryString;
+  }
+
+  buildPPLQuery(target: any, adhocFilters?: any, queryString?: string) {
+    // make sure query has defaults
+    target.format = target.format || queryDef.defaultPPLFormat();
+    target.queryType = ElasticsearchQueryType.PPL;
+
+    // set isLogsQuery depending on the format
+    if (target.format === 'logs') {
+      target.isLogsQuery = true;
+    } else {
+      target.isLogsQuery = false;
+    }
+    if (adhocFilters) {
+      queryString = this.addPPLAdhocFilters(queryString, adhocFilters);
+    }
+
+    const timeRangeFilter = " | where `$timestamp`> timestamp('$timeFrom') and `$timestamp` < timestamp('$timeTo')";
+    if (queryString) {
+      const separatorIndex = queryString.indexOf('|');
+      if (separatorIndex === -1) {
+        queryString = queryString.trimEnd() + timeRangeFilter;
+      } else {
+        queryString =
+          queryString.slice(0, separatorIndex).trimEnd() +
+          timeRangeFilter +
+          ' |' +
+          queryString.slice(separatorIndex + 1);
+      }
+    }
+
+    return { query: queryString };
   }
 }
