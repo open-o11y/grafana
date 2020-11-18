@@ -3,15 +3,24 @@
 	<div class="gf-form-inline">
 		<div class="gf-form gf-form--grow">
 			<label class="gf-form-label query-keyword width-7">Query</label>
-			<input type="text" class="gf-form-input" ng-model="ctrl.target.query" spellcheck='false' placeholder="Lucene query" ng-blur="ctrl.refresh()">
+			<gf-form-dropdown
+				model="ctrl.target.queryType"
+				lookup-text="true"
+				get-options="ctrl.getQueryTypes()"
+				on-change="ctrl.refresh()"
+				allow-custom="false"
+				label-mode="true"
+			>
+			</gf-form-dropdown>
+			<input type="text" class="gf-form-input" ng-model="ctrl.target.query" spellcheck='false' placeholder="{{ctrl.getQueryInputPlaceholder()}}" ng-blur="ctrl.refresh()">
 		</div>
-		<div class="gf-form max-width-15">
+		<div ng-if="ctrl.target.queryType === ctrl.esQueryType.Lucene" class="gf-form max-width-15">
 			<label class="gf-form-label query-keyword">Alias</label>
 			<input type="text" class="gf-form-input" ng-model="ctrl.target.alias" spellcheck='false' placeholder="alias patterns" ng-blur="ctrl.refresh()" pattern='[^<>&\\"]+'>
 		</div>
 	</div>
 
-	<div ng-repeat="agg in ctrl.target.metrics">
+	<div ng-if="ctrl.target.queryType === ctrl.esQueryType.Lucene" ng-repeat="agg in ctrl.target.metrics">
 		<elastic-metric-agg
 			target="ctrl.target" index="$index"
 			get-fields="ctrl.getFields($fieldType)"
@@ -20,12 +29,25 @@
 		</elastic-metric-agg>
 	</div>
 
-	<div ng-repeat="agg in ctrl.target.bucketAggs">
+	<div ng-if="ctrl.target.queryType === ctrl.esQueryType.Lucene" ng-repeat="agg in ctrl.target.bucketAggs">
 		<elastic-bucket-agg
 			target="ctrl.target" index="$index"
 			get-fields="ctrl.getFields($fieldType)"
 			on-change="ctrl.queryUpdated()">
 		</elastic-bucket-agg>
+	</div>
+
+	<div ng-if="ctrl.target.queryType === ctrl.esQueryType.PPL" class="gf-form">
+		<label class="gf-form-label query-keyword width-7">Format as</label>
+		<gf-form-dropdown
+			model="ctrl.target.format"
+			lookup-text="true"
+			get-options="ctrl.getPPLFormatTypes()"
+			on-change="ctrl.refresh()"
+			allow-custom="false"
+			label-mode="true"
+		>
+		</gf-form-dropdown>
 	</div>
 
 </query-editor-row>
