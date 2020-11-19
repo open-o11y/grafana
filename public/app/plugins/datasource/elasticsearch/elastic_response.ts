@@ -531,7 +531,7 @@ export class ElasticResponse {
       }
     }
 
-    return { data: seriesList };
+    return { data: seriesList, key: 'A' };
   };
 
   processPPLResponseToDataFrames(
@@ -576,7 +576,7 @@ export class ElasticResponse {
       series.refId = target.refId;
       dataFrame.push(series);
     }
-    return { data: dataFrame };
+    return { data: dataFrame, key: 'B' };
   }
 
   processPPLResponseToSeries = () => {
@@ -599,7 +599,7 @@ export class ElasticResponse {
       refId: target.refId,
     };
 
-    return { data: [newSeries] };
+    return { data: [newSeries], key: 'B' };
   };
 }
 

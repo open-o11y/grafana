@@ -1,4 +1,5 @@
 import angular from 'angular';
+import { first } from 'rxjs/operators';
 import {
   ArrayVector,
   CoreApp,
@@ -154,7 +155,10 @@ describe('ElasticDatasource', function(this: any) {
         ],
       };
 
-      result = await ctx.ds.query(query);
+      result = await ctx.ds
+        .query(query)
+        .pipe(first())
+        .toPromise();
 
       parts = requestOptions.data.split('\n');
       header = angular.fromJson(parts[0]);
@@ -215,7 +219,10 @@ describe('ElasticDatasource', function(this: any) {
       };
 
       const queryBuilderSpy = jest.spyOn(ctx.ds.queryBuilder, 'getLogsQuery');
-      const response = await ctx.ds.query(query);
+      const response = await ctx.ds
+        .query(query)
+        .pipe(first())
+        .toPromise();
       return { queryBuilderSpy, response };
     }
 
@@ -561,7 +568,7 @@ describe('ElasticDatasource', function(this: any) {
         });
       } catch (e) {
         expect(e).toStrictEqual({ status: 500 });
-        expect(datasourceRequestMock).toBeCalledTimes(1);
+        expect(datasourceRequestMock).toBeCalledTimes(2);
       }
     });
 
@@ -578,7 +585,7 @@ describe('ElasticDatasource', function(this: any) {
         });
       } catch (e) {
         expect(e).toStrictEqual({ status: 404 });
-        expect(datasourceRequestMock).toBeCalledTimes(7);
+        expect(datasourceRequestMock).toBeCalledTimes(8);
       }
     });
   });
