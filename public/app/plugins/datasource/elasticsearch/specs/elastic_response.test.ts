@@ -1404,6 +1404,40 @@ describe('ElasticResponse', () => {
     });
   });
 
+  describe('Invalid PPL time series query response', () => {
+    const targets: any = [
+      {
+        refId: 'A',
+        context: 'explore',
+        interval: '10s',
+        isLogsQuery: true,
+        key: 'Q-89d91614-009c-47b5-9945-39dd66ebcbf2-0',
+        liveStreaming: false,
+        query: 'source=sample_data | stats count(test) by data',
+        queryType: ElasticsearchQueryType.PPL,
+        timeField: 'timestamp',
+        format: 'time_series',
+      },
+    ];
+    const response = {
+      datarows: [
+        [5, 'data1'],
+        [1, 'data2'],
+        [4, 'data3'],
+      ],
+      schema: [
+        { name: 'test', type: 'string' },
+        { name: 'data', type: 'string' },
+      ],
+    };
+    const targetType = ElasticsearchQueryType.PPL;
+    it('should return invalid query error', () => {
+      expect(() => new ElasticResponse(targets, response, targetType).getTimeSeries()).toThrowError(
+        'Invalid time series query'
+      );
+    });
+  });
+
   describe('PPL table query response', () => {
     const targets: any = [
       {

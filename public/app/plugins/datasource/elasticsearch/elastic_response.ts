@@ -400,6 +400,17 @@ export class ElasticResponse {
     return result;
   }
 
+  getInvalidPPLQuery(response: any) {
+    const result: any = {};
+    result.message = 'Invalid time series query';
+
+    if (response.$$config) {
+      result.config = response.$$config;
+    }
+
+    return result;
+  }
+
   getTimeSeries() {
     if (this.targetType === ElasticsearchQueryType.PPL) {
       return this.processPPLResponseToSeries();
@@ -588,6 +599,11 @@ export class ElasticResponse {
     // We check if name is contained because the timefield name might have been escaped
     const timeFieldIndex = _.findIndex(response.schema, (field: { name: any }) => field.name.includes(timeField));
 
+    //time series response should include a field and the timestamp
+    if (timeFieldIndex === -1 || response.datarows[0].length !== 2) {
+      throw this.getInvalidPPLQuery(this.response);
+    }
+
     const datapoints = _.map(response.datarows, datarow => {
       const newDatarow = _.clone(datarow);
       const [timestamp] = newDatarow.splice(timeFieldIndex, 1);
@@ -599,6 +615,7 @@ export class ElasticResponse {
       datapoints,
       props: response.schema,
       refId: target.refId,
+      target: timeFieldIndex === 0 ? response.schema[1].name : response.schema[0].name,
     };
 
     return { data: [newSeries], key: this.targets[0]?.refId };
