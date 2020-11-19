@@ -493,7 +493,7 @@ export class ElasticResponse {
       }
     }
 
-    return { data: dataFrame };
+    return { data: dataFrame, key: this.targets[0]?.refId };
   }
 
   processResponseToSeries = () => {
@@ -531,7 +531,7 @@ export class ElasticResponse {
       }
     }
 
-    return { data: seriesList };
+    return { data: seriesList, key: this.targets[0]?.refId };
   };
 
   processPPLResponseToDataFrames(
@@ -576,7 +576,7 @@ export class ElasticResponse {
       series.refId = target.refId;
       dataFrame.push(series);
     }
-    return { data: dataFrame };
+    return { data: dataFrame, key: this.targets[0]?.refId };
   }
 
   processPPLResponseToSeries = () => {
@@ -599,7 +599,7 @@ export class ElasticResponse {
       refId: target.refId,
     };
 
-    return { data: [newSeries] };
+    return { data: [newSeries], key: this.targets[0]?.refId };
   };
 }
 
