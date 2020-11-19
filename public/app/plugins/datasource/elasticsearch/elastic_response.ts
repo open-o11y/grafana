@@ -440,6 +440,7 @@ export class ElasticResponse {
             propNames,
             this.targets[0].timeField,
             isLogsRequest,
+            this.targetType,
             logMessageField,
             logLevelField
           );
@@ -557,6 +558,7 @@ export class ElasticResponse {
         flattenSchema,
         this.targets[0].timeField,
         isLogsRequest,
+        this.targetType,
         logMessageField,
         logLevelField
       );
@@ -681,18 +683,22 @@ const createEmptyDataFrame = (
   propNames: string[],
   timeField: string,
   isLogsRequest: boolean,
+  targetType: ElasticsearchQueryType,
   logMessageField?: string,
   logLevelField?: string
 ): MutableDataFrame => {
   const series = new MutableDataFrame({ fields: [] });
 
-  series.addField({
-    config: {
-      filterable: true,
-    },
-    name: timeField,
-    type: FieldType.time,
-  });
+  //PPL table response should add time field only when it is part of the query response
+  if (targetType === ElasticsearchQueryType.Lucene || isLogsRequest) {
+    series.addField({
+      config: {
+        filterable: true,
+      },
+      name: timeField,
+      type: FieldType.time,
+    });
+  }
 
   if (logMessageField) {
     series.addField({

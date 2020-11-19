@@ -1447,8 +1447,8 @@ describe('ElasticResponse', () => {
         };
       });
       expect(fields).toEqual([
-        { name: 'timestamp', type: 'time' },
         { name: 'test', type: 'string' },
+        { name: 'timestamp', type: 'string' },
       ]);
 
       let rows = new DataFrameView(logResults);
