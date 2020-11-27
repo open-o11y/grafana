@@ -1,5 +1,6 @@
 import * as queryDef from './query_def';
-import { ElasticsearchAggregation } from './types';
+import { ElasticsearchAggregation, ElasticsearchQueryType } from './types';
+import { dateTime, dateMath } from '@grafana/data';
 
 export class ElasticQueryBuilder {
   timeField: string;
@@ -188,6 +189,7 @@ export class ElasticQueryBuilder {
     target.metrics = target.metrics || [queryDef.defaultMetricAgg()];
     target.bucketAggs = target.bucketAggs || [queryDef.defaultBucketAgg()];
     target.timeField = this.timeField;
+    target.queryType = ElasticsearchQueryType.Lucene;
 
     let i, j, pv, nestedAggs, metric;
     const query = {
@@ -418,5 +420,58 @@ export class ElasticQueryBuilder {
       ...query,
       aggs: this.build(target, null, querystring).aggs,
     };
+  }
+
+  addPPLAdhocFilters(queryString: any, adhocFilters: any) {
+    let i, value, adhocquery;
+
+    for (i = 0; i < adhocFilters.length; i++) {
+      if (dateMath.isValid(adhocFilters[i].value)) {
+        const validTime = dateTime(adhocFilters[i].value).format('YYYY-MM-DD HH:mm:ss.SSSSSS');
+        value = `timestamp('${validTime}')`;
+      } else if (typeof adhocFilters[i].value === 'string') {
+        value = `'${adhocFilters[i].value}'`;
+      } else {
+        value = adhocFilters[i].value;
+      }
+      adhocquery = `\`${adhocFilters[i].key}\` ${adhocFilters[i].operator} ${value}`;
+
+      if (i > 0) {
+        queryString += ' and ' + adhocquery;
+      } else {
+        queryString += ' | where ' + adhocquery;
+      }
+    }
+    return queryString;
+  }
+
+  buildPPLQuery(target: any, adhocFilters?: any, queryString?: string) {
+    // make sure query has defaults
+    target.format = target.format || queryDef.defaultPPLFormat();
+    target.queryType = ElasticsearchQueryType.PPL;
+
+    // set isLogsQuery depending on the format
+    target.isLogsQuery = target.format === 'logs';
+
+    if (adhocFilters) {
+      queryString = this.addPPLAdhocFilters(queryString, adhocFilters);
+    }
+
+    const timeRangeFilter = " where $timestamp > timestamp('$timeFrom') and $timestamp < timestamp('$timeTo')";
+    //time range filter must be placed before other query filters
+    if (queryString) {
+      const separatorIndex = queryString.indexOf('|');
+      if (separatorIndex === -1) {
+        queryString = [queryString.trimEnd(), timeRangeFilter].join(' |');
+      } else {
+        queryString = [
+          queryString.slice(0, separatorIndex).trimEnd(),
+          timeRangeFilter,
+          queryString.slice(separatorIndex + 1),
+        ].join(' |');
+      }
+    }
+
+    return { query: queryString };
   }
 }
