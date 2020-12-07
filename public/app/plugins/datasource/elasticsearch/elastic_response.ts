@@ -3,6 +3,7 @@ import flatten from 'app/core/utils/flatten';
 import * as queryDef from './query_def';
 import TableModel from 'app/core/table_model';
 import {
+  dateTime,
   DataQueryResponse,
   DataFrame,
   toDataFrame,
@@ -10,12 +11,17 @@ import {
   MutableDataFrame,
   PreferredVisualisationType,
 } from '@grafana/data';
-import { ElasticsearchAggregation } from './types';
+import { ElasticsearchAggregation, ElasticsearchQueryType } from './types';
 
 export class ElasticResponse {
-  constructor(private targets: any, private response: any) {
+  constructor(
+    private targets: any,
+    private response: any,
+    private targetType: ElasticsearchQueryType = ElasticsearchQueryType.Lucene
+  ) {
     this.targets = targets;
     this.response = response;
+    this.targetType = targetType;
   }
 
   processMetrics(esAgg: any, target: any, seriesList: any, props: any) {
@@ -394,8 +400,21 @@ export class ElasticResponse {
     return result;
   }
 
+  getInvalidPPLQuery(response: any) {
+    const result: any = {};
+    result.message = 'Invalid time series query';
+
+    if (response.$$config) {
+      result.config = response.$$config;
+    }
+
+    return result;
+  }
+
   getTimeSeries() {
-    if (this.targets.some((target: any) => target.metrics.some((metric: any) => metric.type === 'raw_data'))) {
+    if (this.targetType === ElasticsearchQueryType.PPL) {
+      return this.processPPLResponseToSeries();
+    } else if (this.targets.some((target: any) => target.metrics.some((metric: any) => metric.type === 'raw_data'))) {
       return this.processResponseToDataFrames(false);
     }
     return this.processResponseToSeries();
@@ -478,7 +497,7 @@ export class ElasticResponse {
       }
     }
 
-    return { data: dataFrame };
+    return { data: dataFrame, key: this.targets[0]?.refId };
   }
 
   processResponseToSeries = () => {
@@ -516,7 +535,29 @@ export class ElasticResponse {
       }
     }
 
-    return { data: seriesList };
+    return { data: seriesList, key: this.targets[0]?.refId };
+  };
+
+  processPPLResponseToSeries = () => {
+    // Each target is inputted separately from Elasticdatasource for PPL
+    const target = this.targets;
+    const response = this.response;
+    // Get the data points and target that will be inputted to newSeries
+    const { datapoints, targetVal, invalidTS } = getPPLDatapoints(response);
+
+    // We throw an error if the inputted query is not valid
+    if (invalidTS) {
+      throw this.getInvalidPPLQuery(this.response);
+    }
+
+    const newSeries = {
+      datapoints,
+      props: response.schema,
+      refId: target.refId,
+      target: targetVal,
+    };
+
+    return { data: [newSeries], key: target.refId };
   };
 }
 
@@ -560,6 +601,43 @@ const flattenHits = (hits: Doc[]): { docs: Array<Record<string, any>>; propNames
 
   propNames.sort();
   return { docs, propNames };
+};
+
+/**
+ * Returns the datapoints and target needed for parsing PPL time series response.
+ * Also checks to ensure the query is a valid time series query
+ * @param responses
+ */
+const getPPLDatapoints = (response: any): { datapoints: any; targetVal: any; invalidTS: boolean } => {
+  let invalidTS = false;
+
+  // We check if a valid date type is contained in the response
+  const timeFieldIndex = _.findIndex(
+    response.schema,
+    (field: { type: string }) => field.type === 'timestamp' || field.type === 'datetime' || field.type === 'date'
+  );
+
+  const valueIndex = timeFieldIndex === 0 ? 1 : 0;
+
+  //time series response should include a value field and timestamp
+  if (
+    timeFieldIndex === -1 ||
+    response.datarows[0].length !== 2 ||
+    typeof response.datarows[0][valueIndex] !== 'number'
+  ) {
+    invalidTS = true;
+  }
+
+  const datapoints = _.map(response.datarows, datarow => {
+    const newDatarow = _.clone(datarow);
+    const [timestamp] = newDatarow.splice(timeFieldIndex, 1);
+    newDatarow.push(dateTime(timestamp).unix() * 1000);
+    return newDatarow;
+  });
+
+  const targetVal = response.schema[valueIndex].name;
+
+  return { datapoints, targetVal, invalidTS };
 };
 
 /**
