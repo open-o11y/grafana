@@ -2,7 +2,6 @@ import { GrafanaTheme } from '@grafana/data';
 import { IconButton, stylesFactory, useTheme } from '@grafana/ui';
 import { getInlineLabelStyles } from '@grafana/ui/src/components/Forms/InlineLabel';
 import { css } from 'emotion';
-import { noop } from 'lodash';
 import React, { FunctionComponent } from 'react';
 
 interface Props {
@@ -10,6 +9,7 @@ interface Props {
   onRemoveClick?: false | (() => void);
   onHideClick?: false | (() => void);
   hidden?: boolean;
+  disableRemove?: boolean;
 }
 
 export const QueryEditorRow: FunctionComponent<Props> = ({
@@ -18,6 +18,7 @@ export const QueryEditorRow: FunctionComponent<Props> = ({
   onRemoveClick,
   onHideClick,
   hidden = false,
+  disableRemove = false,
 }) => {
   const theme = useTheme();
   const styles = getStyles(theme);
@@ -37,15 +38,17 @@ export const QueryEditorRow: FunctionComponent<Props> = ({
             className={styles.icon}
           />
         )}
-        <IconButton
-          name="trash-alt"
-          surface="header"
-          size="sm"
-          className={styles.icon}
-          onClick={onRemoveClick || noop}
-          disabled={!onRemoveClick}
-          aria-label="remove metric"
-        />
+        {onRemoveClick && (
+          <IconButton
+            name="trash-alt"
+            surface="header"
+            size="sm"
+            className={styles.icon}
+            onClick={onRemoveClick}
+            disabled={disableRemove}
+            aria-label="remove metric"
+          />
+        )}
       </div>
       {children}
     </fieldset>
