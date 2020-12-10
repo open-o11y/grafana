@@ -726,18 +726,25 @@ func TestExecuteTimeSeriesQuery(t *testing.T) {
 type fakeClient struct {
 	version             int
 	timeField           string
+	index               string
 	multiSearchResponse *es.MultiSearchResponse
 	multiSearchError    error
 	builder             *es.MultiSearchRequestBuilder
+	pplbuilder          *es.PPLRequestBuilder
 	multisearchRequests []*es.MultiSearchRequest
+	pplRequest          []*es.PPLRequest
+	pplResponse         *es.PPLResponse
 }
 
 func newFakeClient(version int) *fakeClient {
 	return &fakeClient{
 		version:             version,
 		timeField:           "@timestamp",
+		index:               "[metrics-]YYYY.MM.DD",
 		multisearchRequests: make([]*es.MultiSearchRequest, 0),
 		multiSearchResponse: &es.MultiSearchResponse{},
+		pplRequest:          make([]*es.PPLRequest, 0),
+		pplResponse:         &es.PPLResponse{},
 	}
 }
 
@@ -749,6 +756,10 @@ func (c *fakeClient) GetVersion() int {
 
 func (c *fakeClient) GetTimeField() string {
 	return c.timeField
+}
+
+func (c *fakeClient) GetIndex() string {
+	return c.index
 }
 
 func (c *fakeClient) GetMinInterval(queryInterval string) (time.Duration, error) {
@@ -763,6 +774,16 @@ func (c *fakeClient) ExecuteMultisearch(r *es.MultiSearchRequest) (*es.MultiSear
 func (c *fakeClient) MultiSearch() *es.MultiSearchRequestBuilder {
 	c.builder = es.NewMultiSearchRequestBuilder(c.version)
 	return c.builder
+}
+
+func (c *fakeClient) ExecutePPLQuery(r *es.PPLRequest) (*es.PPLResponse, error) {
+	c.pplRequest = append(c.pplRequest, r)
+	return c.pplResponse, c.multiSearchError
+}
+
+func (c *fakeClient) PPL() *es.PPLRequestBuilder {
+	c.pplbuilder = es.NewPPLRequestBuilder(c.GetIndex())
+	return c.pplbuilder
 }
 
 func newTsdbQuery(body string) (*tsdb.TsdbQuery, error) {
@@ -802,10 +823,11 @@ func TestTimeSeriesQueryParser(t *testing.T) {
 	Convey("Test time series query parser", t, func() {
 		p := newTimeSeriesQueryParser()
 
-		Convey("Should be able to parse query", func() {
+		Convey("Should be able to parse Lucene query", func() {
 			body := `{
 				"timeField": "@timestamp",
 				"query": "@metric:cpu",
+				"queryType": "lucene",
 				"alias": "{{@hostname}} {{metric}}",
 				"metrics": [
 					{
@@ -862,6 +884,7 @@ func TestTimeSeriesQueryParser(t *testing.T) {
 
 			So(q.TimeField, ShouldEqual, "@timestamp")
 			So(q.RawQuery, ShouldEqual, "@metric:cpu")
+			So(q.QueryType, ShouldEqual, "lucene")
 			So(q.Alias, ShouldEqual, "{{@hostname}} {{metric}}")
 
 			So(q.Metrics, ShouldHaveLength, 2)
@@ -894,6 +917,43 @@ func TestTimeSeriesQueryParser(t *testing.T) {
 			So(q.BucketAggs[1].Settings.Get("interval").MustString(), ShouldEqual, "5m")
 			So(q.BucketAggs[1].Settings.Get("min_doc_count").MustInt64(), ShouldEqual, 0)
 			So(q.BucketAggs[1].Settings.Get("trimEdges").MustInt64(), ShouldEqual, 0)
+		})
+
+		Convey("Should default queryType to Lucene", func() {
+			body := `{
+				"timeField": "@timestamp",
+				"query": "*"
+			}`
+			tsdbQuery, err := newTsdbQuery(body)
+			So(err, ShouldBeNil)
+			queries, err := p.parse(tsdbQuery)
+			So(err, ShouldBeNil)
+			So(queries, ShouldHaveLength, 1)
+
+			q := queries[0]
+
+			So(q.TimeField, ShouldEqual, "@timestamp")
+			So(q.RawQuery, ShouldEqual, "*")
+			So(q.QueryType, ShouldEqual, "lucene")
+		})
+
+		Convey("Should be able to parse PPL query", func() {
+			body := `{
+				"timeField": "@timestamp",
+				"query": "source=index",
+				"queryType": "PPL"
+			}`
+			tsdbQuery, err := newTsdbQuery(body)
+			So(err, ShouldBeNil)
+			queries, err := p.parse(tsdbQuery)
+			So(err, ShouldBeNil)
+			So(queries, ShouldHaveLength, 1)
+
+			q := queries[0]
+
+			So(q.TimeField, ShouldEqual, "@timestamp")
+			So(q.RawQuery, ShouldEqual, "source=index")
+			So(q.QueryType, ShouldEqual, "PPL")
 		})
 	})
 }
