@@ -6,6 +6,7 @@ import {
   MetricAggregationType,
 } from './components/QueryEditor/MetricAggregationsEditor/aggregations';
 import { metricAggregationConfig, pipelineOptions } from './components/QueryEditor/MetricAggregationsEditor/utils';
+import { PPLFormatType } from './components/QueryEditor/PPLFormatEditor/formats';
 
 export const extendedStats: ExtendedStat[] = [
   { label: 'Avg', value: 'avg' },
@@ -49,4 +50,8 @@ export function isPipelineAgg(metricType: MetricAggregationType) {
 
 export function isPipelineAggWithMultipleBucketPaths(metricType: MetricAggregationType) {
   return !!metricAggregationConfig[metricType].supportsMultipleBucketPaths;
+}
+
+export function defaultPPLFormat(): PPLFormatType {
+  return 'table';
 }
