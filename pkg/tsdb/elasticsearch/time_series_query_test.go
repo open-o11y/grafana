@@ -1,6 +1,7 @@
 package elasticsearch
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -720,25 +721,163 @@ func TestExecuteTimeSeriesQuery(t *testing.T) {
 				"var1": "_count",
 			})
 		})
+
+		Convey("With empty PPL query string", func() {
+			c := newFakePPLClient(7,
+				`{"schema": [
+				{ "name": "timeName", "type": "timestamp" },
+				{ "name": "testMetric", "type": "integer" }
+			],
+			"datarows": [
+				["2020-12-01 15:04:05.000000", 10],
+				["2020-12-02 16:04:05.000000", 15]
+			]
+			}`)
+			_, err := executeTsdbQuery(c, `{
+				"timeField": "@timestamp",
+				"query": "",
+				"queryType": "PPL"
+			}`, from, to, 15*time.Second)
+			So(err, ShouldBeNil)
+			q := c.pplRequest[0].Query
+			resp := c.pplResponse
+
+			So(q, ShouldEqual, "source = index | where `@timestamp` >= timestamp('2018-05-15 10:50:00') and `@timestamp` <= timestamp('2018-05-15 10:55:00')")
+			So(resp.Datarows, ShouldHaveLength, 2)
+			So(resp.Datarows[0][1], ShouldEqual, 10)
+			So(resp.Schema, ShouldHaveLength, 2)
+			So(resp.Schema[0].Name, ShouldEqual, "timeName")
+		})
+
+		Convey("With PPL query string", func() {
+			c := newFakePPLClient(7,
+				`{"schema": [
+				{ "name": "dateValue", "type": "date" },
+				{ "name": "count(response)", "type": "int" }
+			],
+			"datarows": [
+				["2020-12-02", 5],
+				["2020-12-03", 6]
+			]
+			}`)
+			_, err := executeTsdbQuery(c, `{
+				"timeField": "@timestamp",
+				"query": "source = index | eval dateValue=date(timestamp) | stats count(response) by dateValue",
+				"queryType": "PPL"
+			}`, from, to, 15*time.Second)
+			So(err, ShouldBeNil)
+			q := c.pplRequest[0].Query
+
+			So(q, ShouldEqual, "source = index | where `@timestamp` >= timestamp('2018-05-15 10:50:00') and `@timestamp` <= timestamp('2018-05-15 10:55:00') | eval dateValue=date(timestamp) | stats count(response) by dateValue")
+		})
+
+		Convey("With empty PPL response", func() {
+			c := newFakePPLClient(7,
+				`{
+				"schema": [],
+				"datarows": []
+			}`)
+			_, err := executeTsdbQuery(c, `{
+				"timeField": "@timestamp",
+				"query": "source = test",
+				"queryType": "PPL"
+			}`, from, to, 15*time.Second)
+			So(err.Error(), ShouldEqual, "response should have 2 fields but found 0")
+			q := c.pplRequest[0].Query
+
+			So(q, ShouldEqual, "source = test | where `@timestamp` >= timestamp('2018-05-15 10:50:00') and `@timestamp` <= timestamp('2018-05-15 10:55:00')")
+			So(c.pplResponse.Datarows, ShouldHaveLength, 0)
+			So(c.pplResponse.Schema, ShouldHaveLength, 0)
+		})
+
+		Convey("With invalid PPL response, timestamp type error", func() {
+			c := newFakePPLClient(7,
+				`{"schema": [
+				{ "name": "timeString", "type": "string" },
+				{ "name": "testMetric", "type": "integer" }
+			],
+			"datarows": [
+				["foo", 10],
+				["foo", 15]
+			]
+			}`)
+			_, err := executeTsdbQuery(c, `{
+				"timeField": "@timestamp",
+				"query": "source = test | fields timeString, testMetric",
+				"queryType": "PPL"
+			}`, from, to, 15*time.Second)
+			So(err.Error(), ShouldEqual, "a valid time field type was not found in response")
+			q := c.pplRequest[0].Query
+
+			So(q, ShouldEqual, "source = test | where `@timestamp` >= timestamp('2018-05-15 10:50:00') and `@timestamp` <= timestamp('2018-05-15 10:55:00') | fields timeString, testMetric")
+		})
+
+		Convey("With invalid PPL response, no numeric field", func() {
+			c := newFakePPLClient(7,
+				`{"schema": [
+				{ "name": "timeName", "type": "timestamp" },
+				{ "name": "testMetric", "type": "string" }
+			],
+			"datarows": [
+				["2020-12-01 15:04:05.000000", "foo"],
+				["2020-12-02 16:04:05.000000", "foo"]
+			]
+			}`)
+			_, err := executeTsdbQuery(c, `{
+				"timeField": "@timestamp",
+				"query": "",
+				"queryType": "PPL"
+			}`, from, to, 15*time.Second)
+			So(err.Error(), ShouldEqual, "found non-numerical value in value field")
+			q := c.pplRequest[0].Query
+
+			So(q, ShouldEqual, "source = index | where `@timestamp` >= timestamp('2018-05-15 10:50:00') and `@timestamp` <= timestamp('2018-05-15 10:55:00')")
+		})
 	})
 }
 
 type fakeClient struct {
 	version             int
 	timeField           string
+	index               string
 	multiSearchResponse *es.MultiSearchResponse
 	multiSearchError    error
 	builder             *es.MultiSearchRequestBuilder
+	pplbuilder          *es.PPLRequestBuilder
 	multisearchRequests []*es.MultiSearchRequest
+	pplRequest          []*es.PPLRequest
+	pplResponse         *es.PPLResponse
 }
 
 func newFakeClient(version int) *fakeClient {
 	return &fakeClient{
 		version:             version,
 		timeField:           "@timestamp",
+		index:               "[metrics-]YYYY.MM.DD",
 		multisearchRequests: make([]*es.MultiSearchRequest, 0),
 		multiSearchResponse: &es.MultiSearchResponse{},
+		pplRequest:          make([]*es.PPLRequest, 0),
+		pplResponse:         &es.PPLResponse{},
 	}
+}
+
+func newFakePPLClient(version int, responseBody string) *fakeClient {
+	var response *es.PPLResponse
+	err := json.Unmarshal([]byte(responseBody), &response)
+	if err != nil {
+		return nil
+	}
+
+	testClient := &fakeClient{
+		version:             version,
+		timeField:           "@timestamp",
+		index:               "index",
+		multisearchRequests: make([]*es.MultiSearchRequest, 0),
+		multiSearchResponse: &es.MultiSearchResponse{},
+		pplRequest:          make([]*es.PPLRequest, 0),
+		pplResponse:         response,
+	}
+	return testClient
 }
 
 func (c *fakeClient) EnableDebug() {}
@@ -749,6 +888,10 @@ func (c *fakeClient) GetVersion() int {
 
 func (c *fakeClient) GetTimeField() string {
 	return c.timeField
+}
+
+func (c *fakeClient) GetIndex() string {
+	return c.index
 }
 
 func (c *fakeClient) GetMinInterval(queryInterval string) (time.Duration, error) {
@@ -763,6 +906,16 @@ func (c *fakeClient) ExecuteMultisearch(r *es.MultiSearchRequest) (*es.MultiSear
 func (c *fakeClient) MultiSearch() *es.MultiSearchRequestBuilder {
 	c.builder = es.NewMultiSearchRequestBuilder(c.version)
 	return c.builder
+}
+
+func (c *fakeClient) ExecutePPLQuery(r *es.PPLRequest) (*es.PPLResponse, error) {
+	c.pplRequest = append(c.pplRequest, r)
+	return c.pplResponse, c.multiSearchError
+}
+
+func (c *fakeClient) PPL() *es.PPLRequestBuilder {
+	c.pplbuilder = es.NewPPLRequestBuilder(c.GetIndex())
+	return c.pplbuilder
 }
 
 func newTsdbQuery(body string) (*tsdb.TsdbQuery, error) {
@@ -802,10 +955,11 @@ func TestTimeSeriesQueryParser(t *testing.T) {
 	Convey("Test time series query parser", t, func() {
 		p := newTimeSeriesQueryParser()
 
-		Convey("Should be able to parse query", func() {
+		Convey("Should be able to parse Lucene query", func() {
 			body := `{
 				"timeField": "@timestamp",
 				"query": "@metric:cpu",
+				"queryType": "lucene",
 				"alias": "{{@hostname}} {{metric}}",
 				"metrics": [
 					{
@@ -862,6 +1016,7 @@ func TestTimeSeriesQueryParser(t *testing.T) {
 
 			So(q.TimeField, ShouldEqual, "@timestamp")
 			So(q.RawQuery, ShouldEqual, "@metric:cpu")
+			So(q.QueryType, ShouldEqual, "lucene")
 			So(q.Alias, ShouldEqual, "{{@hostname}} {{metric}}")
 
 			So(q.Metrics, ShouldHaveLength, 2)
@@ -894,6 +1049,43 @@ func TestTimeSeriesQueryParser(t *testing.T) {
 			So(q.BucketAggs[1].Settings.Get("interval").MustString(), ShouldEqual, "5m")
 			So(q.BucketAggs[1].Settings.Get("min_doc_count").MustInt64(), ShouldEqual, 0)
 			So(q.BucketAggs[1].Settings.Get("trimEdges").MustInt64(), ShouldEqual, 0)
+		})
+
+		Convey("Should default queryType to Lucene", func() {
+			body := `{
+				"timeField": "@timestamp",
+				"query": "*"
+			}`
+			tsdbQuery, err := newTsdbQuery(body)
+			So(err, ShouldBeNil)
+			queries, err := p.parse(tsdbQuery)
+			So(err, ShouldBeNil)
+			So(queries, ShouldHaveLength, 1)
+
+			q := queries[0]
+
+			So(q.TimeField, ShouldEqual, "@timestamp")
+			So(q.RawQuery, ShouldEqual, "*")
+			So(q.QueryType, ShouldEqual, "lucene")
+		})
+
+		Convey("Should be able to parse PPL query", func() {
+			body := `{
+				"timeField": "@timestamp",
+				"query": "source=index",
+				"queryType": "PPL"
+			}`
+			tsdbQuery, err := newTsdbQuery(body)
+			So(err, ShouldBeNil)
+			queries, err := p.parse(tsdbQuery)
+			So(err, ShouldBeNil)
+			So(queries, ShouldHaveLength, 1)
+
+			q := queries[0]
+
+			So(q.TimeField, ShouldEqual, "@timestamp")
+			So(q.RawQuery, ShouldEqual, "source=index")
+			So(q.QueryType, ShouldEqual, "PPL")
 		})
 	})
 }
