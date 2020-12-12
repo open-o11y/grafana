@@ -2,9 +2,9 @@ import { Action } from '../../../hooks/useStatelessReducer';
 import { INIT, InitAction } from '../state';
 import { PPLFormatType } from './formats';
 
-const CHANGE_FORMAT = 'change_format';
+export const CHANGE_FORMAT = 'change_format';
 
-interface ChangeFormatAction extends Action<typeof CHANGE_FORMAT> {
+export interface ChangeFormatAction extends Action<typeof CHANGE_FORMAT> {
   payload: {
     format: PPLFormatType;
   };

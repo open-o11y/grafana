@@ -2,9 +2,9 @@ import { Action } from '../../../hooks/useStatelessReducer';
 import { ElasticsearchQueryType } from '../../../types';
 import { INIT, InitAction } from '../state';
 
-const CHANGE_QUERY_TYPE = 'change_query_type';
+export const CHANGE_QUERY_TYPE = 'change_query_type';
 
-interface ChangeQueryTypeAction extends Action<typeof CHANGE_QUERY_TYPE> {
+export interface ChangeQueryTypeAction extends Action<typeof CHANGE_QUERY_TYPE> {
   payload: {
     queryType: ElasticsearchQueryType;
   };

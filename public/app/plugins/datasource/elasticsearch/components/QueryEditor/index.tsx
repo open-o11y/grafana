@@ -18,7 +18,7 @@ interface Props {
   value: ElasticsearchQuery;
 }
 
-const QueryEditorForm: FunctionComponent<Props> = ({ value }) => {
+export const QueryEditorForm: FunctionComponent<Props> = ({ value }) => {
   const { queryType } = value;
 
   switch (queryType) {
