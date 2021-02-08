@@ -67,31 +67,51 @@ export interface Props extends Themeable {
   onMoveBackward: () => void;
   onMoveForward: () => void;
   onZoom: () => void;
+  onClose?: () => void;
   history?: TimeRange[];
+  invalid?: boolean;
+  error?: string;
 }
 
 export interface State {
   isOpen: boolean;
+  maybeClosing: boolean;
 }
 
 export class UnthemedTimeRangePicker extends PureComponent<Props, State> {
   state: State = {
     isOpen: false,
+    maybeClosing: false,
   };
+
+  componentDidUpdate(_prevProps: Props, prevState: State) {
+    // onChange should only close if it does not cause invalid props to be true
+    if (!this.props.invalid && prevState.maybeClosing) {
+      this.setState({ isOpen: false });
+    }
+    this.setState({ maybeClosing: false });
+  }
 
   onChange = (timeRange: TimeRange) => {
     this.props.onChange(timeRange);
-    this.setState({ isOpen: false });
+    this.setState({ maybeClosing: true });
   };
 
   onOpen = (event: FormEvent<HTMLButtonElement>) => {
     const { isOpen } = this.state;
     event.stopPropagation();
     event.preventDefault();
-    this.setState({ isOpen: !isOpen });
+    if (!isOpen) {
+      this.setState({ isOpen: true });
+    } else {
+      this.onClose();
+    }
   };
 
   onClose = () => {
+    if (this.props.onClose !== undefined) {
+      this.props.onClose();
+    }
     this.setState({ isOpen: false });
   };
 
@@ -107,6 +127,8 @@ export class UnthemedTimeRangePicker extends PureComponent<Props, State> {
       theme,
       history,
       onChangeTimeZone,
+      invalid,
+      error,
     } = this.props;
 
     const { isOpen } = this.state;
@@ -146,6 +168,8 @@ export class UnthemedTimeRangePicker extends PureComponent<Props, State> {
                   history={history}
                   showHistory
                   onChangeTimeZone={onChangeTimeZone}
+                  invalid={invalid}
+                  error={error}
                 />
               </ClickOutsideWrapper>
             )}

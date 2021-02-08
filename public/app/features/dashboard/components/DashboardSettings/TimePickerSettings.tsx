@@ -5,24 +5,37 @@ import isEmpty from 'lodash/isEmpty';
 import { selectors } from '@grafana/e2e-selectors';
 import { AutoRefreshIntervals } from './AutoRefreshIntervals';
 
+export const isValidTimeSpanInput = (value: string): boolean => {
+  const timeUnits = ['ms', 's', 'm', 'h', 'd', 'w', 'M', 'y'];
+  // this pattern matches a number without leading zeros followed by a time unit and optional trailing whitespace
+  const regexp = new RegExp(`^(0|[1-9]\\d*)(${timeUnits.join('|')})\\s*$`);
+  return isEmpty(value) || regexp.test(value);
+};
+
 interface Props {
   onTimeZoneChange: (timeZone: TimeZone) => void;
   onRefreshIntervalChange: (interval: string[]) => void;
   onNowDelayChange: (nowDelay: string) => void;
+  onMaxTimeSpanChange: (maxTimeSpan: string) => void;
   onHideTimePickerChange: (hide: boolean) => void;
+  onTimeRangeStartLimitChange: (timeRangeStartLimit: string) => void;
   renderCount: number; // hack to make sure Angular changes are propagated properly, please remove when DashboardSettings are migrated to React
   refreshIntervals: string[];
   timePickerHidden: boolean;
   nowDelay: string;
+  timeRangeStartLimit: string;
+  maxTimeSpan: string;
   timezone: TimeZone;
 }
 
 interface State {
   isNowDelayValid: boolean;
+  isTimeRangeStartLimitValid: boolean;
+  isMaxTimeSpanValid: boolean;
 }
 
 export class TimePickerSettings extends PureComponent<Props, State> {
-  state: State = { isNowDelayValid: true };
+  state: State = { isNowDelayValid: true, isTimeRangeStartLimitValid: true, isMaxTimeSpanValid: true };
 
   onNowDelayChange = (event: React.FormEvent<HTMLInputElement>) => {
     const value = event.currentTarget.value;
@@ -38,6 +51,28 @@ export class TimePickerSettings extends PureComponent<Props, State> {
     }
 
     this.setState({ isNowDelayValid: false });
+  };
+
+  onTimeRangeStartLimitChange = (event: React.FormEvent<HTMLInputElement>) => {
+    const value = event.currentTarget.value;
+
+    if (isValidTimeSpanInput(value)) {
+      this.setState({ isTimeRangeStartLimitValid: true });
+      this.props.onTimeRangeStartLimitChange(value.trimRight());
+    } else {
+      this.setState({ isTimeRangeStartLimitValid: false });
+    }
+  };
+
+  onMaxTimeSpanChange = (event: React.FormEvent<HTMLInputElement>) => {
+    const value = event.currentTarget.value;
+
+    if (isValidTimeSpanInput(value)) {
+      this.setState({ isMaxTimeSpanValid: true });
+      this.props.onMaxTimeSpanChange(value.trimRight());
+    } else {
+      this.setState({ isMaxTimeSpanValid: false });
+    }
   };
 
   onHideTimePickerChange = () => {
@@ -85,7 +120,28 @@ export class TimePickerSettings extends PureComponent<Props, State> {
               />
             </Tooltip>
           </div>
-
+          <div className="gf-form">
+            <span className="gf-form-label width-7">Max time back</span>
+            <Tooltip placement="right" content={'Enter the maximum time users can go back'}>
+              <Input
+                width={60}
+                invalid={!this.state.isTimeRangeStartLimitValid}
+                onChange={this.onTimeRangeStartLimitChange}
+                defaultValue={this.props.timeRangeStartLimit}
+              />
+            </Tooltip>
+          </div>
+          <div className="gf-form">
+            <span className="gf-form-label width-7">Max time span</span>
+            <Tooltip placement="right" content={'Enter the maximum time span allowed by time range controls'}>
+              <Input
+                width={60}
+                invalid={!this.state.isMaxTimeSpanValid}
+                onChange={this.onMaxTimeSpanChange}
+                defaultValue={this.props.maxTimeSpan}
+              />
+            </Tooltip>
+          </div>
           <div className="gf-form">
             <InlineField labelWidth={14} label="Hide time picker">
               <Switch value={!!this.props.timePickerHidden} onChange={this.onHideTimePickerChange} />

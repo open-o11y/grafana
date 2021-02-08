@@ -33,7 +33,14 @@ export interface Props extends Themeable {
   location: LocationState;
   onChangeTimeZone: typeof updateTimeZoneForSession;
 }
-class UnthemedDashNavTimeControls extends Component<Props> {
+
+interface State {
+  isError: boolean;
+  errorMessage: string;
+}
+
+class UnthemedDashNavTimeControls extends Component<Props, State> {
+  state: State = { isError: false, errorMessage: '' };
   componentDidMount() {
     // Only reason for this is that sometimes time updates can happen via redux location changes
     // and this happens before timeSrv has had chance to update state (as it listens to angular route-updated)
@@ -83,7 +90,13 @@ class UnthemedDashNavTimeControls extends Component<Props> {
       to: hasDelay ? 'now-' + panel.nowDelay : adjustedTo,
     };
 
-    getTimeSrv().setTime(nextRange);
+    try {
+      getTimeSrv().validateTimeRange(nextRange);
+      getTimeSrv().setTime(nextRange);
+      this.setState({ isError: false, errorMessage: '' });
+    } catch (err) {
+      this.setState({ isError: true, errorMessage: err.message });
+    }
   };
 
   onChangeTimeZone = (timeZone: TimeZone) => {
@@ -94,6 +107,10 @@ class UnthemedDashNavTimeControls extends Component<Props> {
 
   onZoom = () => {
     appEvents.emit(CoreEvents.zoomOut, 2);
+  };
+
+  onClose = () => {
+    this.setState({ isError: false, errorMessage: '' });
   };
 
   render() {
@@ -114,7 +131,10 @@ class UnthemedDashNavTimeControls extends Component<Props> {
           onMoveBackward={this.onMoveBack}
           onMoveForward={this.onMoveForward}
           onZoom={this.onZoom}
+          onClose={this.onClose}
           onChangeTimeZone={this.onChangeTimeZone}
+          invalid={this.state.isError}
+          error={this.state.errorMessage}
         />
         <RefreshPicker
           onIntervalChanged={this.onChangeRefreshInterval}

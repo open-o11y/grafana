@@ -135,16 +135,26 @@ export class TimeSrv {
   private initTimeFromUrl() {
     const params = this.$location.search();
 
+    let time = _.clone(this.time);
+
     if (params.time && params['time.window']) {
-      this.time = this.getTimeWindow(params.time, params['time.window']);
+      time = this.getTimeWindow(params.time, params['time.window']);
     }
 
     if (params.from) {
-      this.time.from = this.parseUrlParam(params.from) || this.time.from;
+      time.from = this.parseUrlParam(params.from) || this.time.from;
     }
     if (params.to) {
-      this.time.to = this.parseUrlParam(params.to) || this.time.to;
+      time.to = this.parseUrlParam(params.to) || this.time.to;
     }
+
+    try {
+      this.validateTimeRange(time);
+      this.time = time;
+    } catch {
+      this.setTime(this.time);
+    }
+
     // if absolute ignore refresh option saved to dashboard
     if (params.to && params.to.indexOf('now') === -1) {
       this.refresh = false;
@@ -291,7 +301,15 @@ export class TimeSrv {
     const range = this.timeRange();
     const { from, to } = getZoomedTimeRange(range, factor);
 
-    this.setTime({ from: toUtc(from), to: toUtc(to) });
+    const zoomedTimeRange: RawTimeRange = {
+      from: toUtc(from),
+      to: toUtc(to),
+    };
+
+    try {
+      this.validateTimeRange(zoomedTimeRange);
+      this.setTime(zoomedTimeRange);
+    } catch {}
   }
 
   shiftTime(direction: number) {
@@ -302,6 +320,53 @@ export class TimeSrv {
       from: toUtc(from),
       to: toUtc(to),
     });
+  }
+
+  private validateTimeBack(time: RawTimeRange) {
+    const { timeRangeStartLimit } = this.dashboard?.timepicker ?? { timeRangeStartLimit: undefined };
+    if (!timeRangeStartLimit) {
+      return;
+    }
+
+    const timeRangeStartLimitRawRange = {
+      from: 'now-' + timeRangeStartLimit,
+      to: 'now',
+    };
+    const timeRangeStartLimitRange = rangeUtil.convertRawToRange(timeRangeStartLimitRawRange);
+    const timeRangeStartLimitSpan = timeRangeStartLimitRange.to.valueOf() - timeRangeStartLimitRange.from.valueOf();
+
+    const timeBackRawRange = {
+      from: time.from,
+      to: 'now',
+    };
+    const timeBackRange = rangeUtil.convertRawToRange(timeBackRawRange);
+    const timeBackSpan = timeBackRange.to.valueOf() - timeBackRange.from.valueOf();
+
+    // Add 1 to timeRangeStartLimitBack to allow for rounding errors
+    const exceededTimeRangeStartLimit = timeBackSpan > timeRangeStartLimitSpan + 1;
+    if (exceededTimeRangeStartLimit) {
+      throw new Error(`Time range start exceeds limit of ${timeRangeStartLimit} in the past`);
+    }
+  }
+
+  private validateTimeSpan(time: RawTimeRange) {
+    const { maxTimeSpan } = this.dashboard?.timepicker ?? { maxTimeSpan: undefined };
+    const timeRange = rangeUtil.convertRawToRange(time);
+    const timeSpan = timeRange.to.valueOf() - timeRange.from.valueOf();
+    // Add 1 to timeRangeStartLimitSpan to allow for rounding errors
+    const exceededMaxTimeSpan = maxTimeSpan && timeSpan > rangeUtil.intervalToMs(maxTimeSpan) + 1;
+    if (exceededMaxTimeSpan) {
+      throw new Error(`Time range exceeds maximum time span of ${maxTimeSpan}`);
+    }
+  }
+
+  validateTimeRange(time: RawTimeRange) {
+    try {
+      this.validateTimeBack(time);
+      this.validateTimeSpan(time);
+    } catch (err) {
+      throw new Error(`Invalid time range: ${err.message}`);
+    }
   }
 }
 

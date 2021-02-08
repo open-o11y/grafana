@@ -57,6 +57,9 @@ const getStyles = stylesFactory((theme: GrafanaTheme, isReversed) => {
     spacing: css`
       margin-top: 16px;
     `,
+    errorMessageWrapper: css`
+      margin: 0 4px;
+    `,
   };
 });
 
@@ -135,6 +138,8 @@ interface Props {
   hideTimeZone?: boolean;
   /** Reverse the order of relative and absolute range pickers. Used to left align the picker in forms */
   isReversed?: boolean;
+  invalid?: boolean;
+  error?: string;
 }
 
 interface PropsWithScreenSize extends Props {
@@ -177,8 +182,22 @@ export const TimePickerContentWithScreenSize: React.FC<PropsWithScreenSize> = pr
           />
         </CustomScrollbar>
       </div>
+
       {!props.hideTimeZone && isFullscreen && (
         <TimePickerFooter timeZone={props.timeZone} onChangeTimeZone={props.onChangeTimeZone} />
+      )}
+
+      {props.invalid && props.error && (
+        <div className={styles.errorMessageWrapper}>
+          <div className="alert-error alert">
+            <div className="alert-icon">
+              <Icon name="exclamation-triangle" />
+            </div>
+            <div className="alert-body">
+              <div className="alert-title">{props.error}</div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
