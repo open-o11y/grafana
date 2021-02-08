@@ -17,6 +17,7 @@ export interface ElasticsearchOptions extends DataSourceJsonData {
   logMessageField?: string;
   logLevelField?: string;
   dataLinks?: DataLinkConfig[];
+  pplSupportEnabled?: boolean;
 }
 
 interface MetricConfiguration<T extends MetricAggregationType> {

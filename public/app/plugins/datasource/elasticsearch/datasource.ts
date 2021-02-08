@@ -59,6 +59,7 @@ export class ElasticDatasource extends DataSourceApi<ElasticsearchQuery, Elastic
   logLevelField?: string;
   dataLinks: DataLinkConfig[];
   languageProvider: LanguageProvider;
+  pplSupportEnabled?: boolean;
 
   constructor(
     instanceSettings: DataSourceInstanceSettings<ElasticsearchOptions>,
@@ -94,6 +95,7 @@ export class ElasticDatasource extends DataSourceApi<ElasticsearchQuery, Elastic
       this.logLevelField = undefined;
     }
     this.languageProvider = new LanguageProvider(this);
+    this.pplSupportEnabled = settingsData.pplSupportEnabled;
   }
 
   private request(method: string, url: string, data?: undefined) {
