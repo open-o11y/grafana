@@ -12,9 +12,9 @@ import tinycolor from 'tinycolor2';
 
 export interface WorldmapConfig {
   fieldMapping: FieldMappingOptions,
-  minSize?: number,
-  maxSize?: number,
-  opacity?: number,
+  minSize: number,
+  maxSize: number,
+  opacity: number,
 }
 
 const defaultOptions: WorldmapConfig = {
@@ -25,8 +25,8 @@ const defaultOptions: WorldmapConfig = {
     latitudeField: '',
     longitudeField: '',
   },
-  minSize: 5,
-  maxSize: 15,
+  minSize: 1,
+  maxSize: 10,
   opacity: 0.3,
 };
 
@@ -57,7 +57,8 @@ export const circlesLayer: MapLayerRegistryItem<WorldmapConfig> = {
           // Get circle colors from threshold
           const color = getColor(data.series[0].fields[0].config, theme, datapoint.value);
           var colorRBGA = tinycolor(color).toRgb();
-          colorRBGA.a = config.opacity!;
+          // Set the opacity determined from user configuration
+          colorRBGA.a = config.opacity;
 
           // Get circle size from user configuration
           const radius = calcCircleSize(dataArray, datapoint.value, config.minSize, config.maxSize);
@@ -90,21 +91,18 @@ export const circlesLayer: MapLayerRegistryItem<WorldmapConfig> = {
 };
 
 // Scales the circle size depending on the current data and user defined configurations
-function calcCircleSize(dataArray: any, value: any, minSize: any, maxSize: any) {
-  const circleMinSize = minSize;
-  const circleMaxSize = maxSize;
-
+function calcCircleSize(dataArray: any, value: number, minSize: number, maxSize: number) {
   if (dataArray.valueRange === 0) {
-    return circleMaxSize;
+    return maxSize;
   }
 
-  const dataFactor = (value - dataArray.lowestValue) / dataArray.highestValue;
-  const circleSizeRange = circleMaxSize - circleMinSize;
-  return circleSizeRange * dataFactor + circleMinSize;
+  const dataFactor = (value - dataArray.lowestValue) / dataArray.valueRange;
+  const circleSizeRange = maxSize - minSize;
+  return circleSizeRange * dataFactor + minSize;
 };
 
 // Returns the color for a specific data value depending on the threshold
-function getColor(config:any, theme: GrafanaTheme2, value: any ) {
+function getColor(config:any, theme: GrafanaTheme2, value: number ) {
   for (let index = config.thresholds.steps.length; index > 0; index -= 1) {
     if (value >= config.thresholds.steps[index - 1].value) {
       var colorName = config.thresholds.steps[index - 1].color;
