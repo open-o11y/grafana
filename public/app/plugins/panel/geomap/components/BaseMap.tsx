@@ -51,7 +51,7 @@ export class BaseMap extends Component<BaseMapProps> {
 
     // External configuraiton changed
     if (this.props.options !== oldProps.options) {
-      this.optionsChanged(oldProps.options);
+      this.optionsChanged(this.props.options);
     }
 
     // External data changed

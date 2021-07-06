@@ -1,3 +1,4 @@
+import { heatmapLayer } from './heatMap';
 import { geojsonMapper } from './geojsonMapper';
 import { lastPointTracker } from './lastPointTracker';
 import { worldmapBehaviorLayer } from './worldmapBehavior';
@@ -7,6 +8,7 @@ import { worldmapBehaviorLayer } from './worldmapBehavior';
  */
 export const dataLayers = [
     worldmapBehaviorLayer, // mimic the existing worldmap
+    heatmapLayer,
     lastPointTracker,
     geojsonMapper, // dummy for now
 ];
