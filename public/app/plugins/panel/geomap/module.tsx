@@ -30,7 +30,7 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
     let category = ['Data Layer'];
     builder
       .addCustomEditor({
-        category: ['Data Layer'],
+        category,
         id: 'layers',
         path: 'layers',
         name: 'Data Layer',
@@ -85,6 +85,36 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
         defaultValue: '',
         showIf: (config) =>
           config.layers[0].config?.fieldMapping.queryFormat === 'geohash' && config.layers[0].type === 'circles',
+      })
+      // Circle overlay options
+      .addNumberInput({
+        category,
+        path: 'layers[0].config.minSize',
+        description: 'configures the min circle size',
+        name: 'Min Size',
+        defaultValue: 1,
+        showIf: (config) => config.layers[0].type === 'circles',
+      })
+      .addNumberInput({
+        category,
+        path: 'layers[0].config.maxSize',
+        description: 'configures the max circle size',
+        name: 'Max Size',
+        defaultValue: 10,
+        showIf: (config) => config.layers[0].type === 'circles',
+      })
+      .addSliderInput({
+        category,
+        path: 'layers[0].config.opacity',
+        description: 'configures the amount of transparency',
+        name: 'Opacity',
+        defaultValue: 0.4,
+        settings: {
+          min: 0,
+          max: 1,
+          step: 0.1,
+        },
+        showIf: (config) => config.layers[0].type === 'circles',
       });
 
     // The controls section
