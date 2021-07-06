@@ -27,7 +27,7 @@ const defaultOptions: CirlceConfig = {
   },
   minSize: 1,
   maxSize: 10,
-  opacity: 0.3,
+  opacity: 0.4,
 };
 
 export const circlesLayer: MapLayerRegistryItem<CirlceConfig> = {
