@@ -1,12 +1,12 @@
 import { geojsonMapper } from './geojsonMapper';
 import { lastPointTracker } from './lastPointTracker';
-import { worldmapBehaviorLayer } from './worldmapBehavior';
+import { circlesLayer } from './circlesOverlay';
 
 /**
  * Registry for layer handlers
  */
 export const dataLayers = [
-    worldmapBehaviorLayer, // mimic the existing worldmap
+    circlesLayer, // mimic the existing worldmap
     lastPointTracker,
     geojsonMapper, // dummy for now
 ];

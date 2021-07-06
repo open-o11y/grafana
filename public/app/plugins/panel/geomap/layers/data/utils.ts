@@ -29,8 +29,8 @@ interface locations {
 };
 
 interface location {
-  latitude: string;
-  longitude: string;
+  latitude: number;
+  longitude: number;
   value: number;
 }
 

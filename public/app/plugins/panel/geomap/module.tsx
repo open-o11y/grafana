@@ -53,14 +53,14 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
             },
           ],
         },
-        showIf: (config) => config.layers[0].type === 'worldmap-behavior',
+        showIf: (config) => config.layers[0].type === 'circles',
       })
       .addTextInput({
         category,
         path: 'layers[0].config.fieldMapping.metricField',
         name: 'Metric Field',
         defaultValue: '',
-        showIf: (config) => config.layers[0].type === 'worldmap-behavior',
+        showIf: (config) => config.layers[0].type === 'circles',
       })
       .addTextInput({
         category,
@@ -68,8 +68,7 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
         name: 'Latitude Field',
         defaultValue: '',
         showIf: (config) =>
-          config.layers[0].config?.fieldMapping.queryFormat === 'coordinates' &&
-          config.layers[0].type === 'worldmap-behavior',
+          config.layers[0].config?.fieldMapping.queryFormat === 'coordinates' && config.layers[0].type === 'circles',
       })
       .addTextInput({
         category,
@@ -77,8 +76,7 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
         name: 'Longitude Field',
         defaultValue: '',
         showIf: (config) =>
-          config.layers[0].config?.fieldMapping.queryFormat === 'coordinates' &&
-          config.layers[0].type === 'worldmap-behavior',
+          config.layers[0].config?.fieldMapping.queryFormat === 'coordinates' && config.layers[0].type === 'circles',
       })
       .addTextInput({
         category,
@@ -86,8 +84,7 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
         name: 'Geohash Field',
         defaultValue: '',
         showIf: (config) =>
-          config.layers[0].config?.fieldMapping.queryFormat === 'geohash' &&
-          config.layers[0].type === 'worldmap-behavior',
+          config.layers[0].config?.fieldMapping.queryFormat === 'geohash' && config.layers[0].type === 'circles',
       });
 
     // The controls section
