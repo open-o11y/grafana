@@ -48,10 +48,8 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
       editor: BaseLayerEditor,
     });
 
-    // Data layer section
-    category = ['Data Layer'];
     builder.addCustomEditor({
-      category,
+      category: ['Data Layer'],
       id: 'layers',
       path: 'layers',
       name: 'Data Layer',
