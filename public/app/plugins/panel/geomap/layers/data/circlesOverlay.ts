@@ -93,18 +93,12 @@ export const circlesLayer: MapLayerRegistryItem<CirlceConfig> = {
         description: 'configures the min circle size',
         name: 'Min Size',
         defaultValue: 1,
-        settings: {
-          placeholder: defaultOptions.minSize,
-        },
       })
       .addNumberInput({
         path: 'maxSize',
         description: 'configures the max circle size',
         name: 'Max Size',
         defaultValue: 10,
-        settings: {
-          placeholder: defaultOptions.maxSize,
-        },
       })
       .addSliderInput({
         path: 'opacity',
