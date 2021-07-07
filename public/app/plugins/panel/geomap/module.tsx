@@ -2,22 +2,44 @@ import { PanelPlugin } from '@grafana/data';
 import { BaseLayerEditor } from './editor/BaseLayerEditor';
 import { DataLayersEditor } from './editor/DataLayersEditor';
 import { GeomapPanel } from './GeomapPanel';
-import { MapViewEditor } from './MapViewEditor';
-import { GeomapPanelOptions } from './types';
+import { MapCenterEditor } from './editor/MapCenterEditor';
+import { defaultView, GeomapPanelOptions } from './types';
+import { MapZoomEditor } from './editor/MapZoomEditor';
+import { mapPanelChangedHandler } from './migrations';
 
 export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
   .setNoPadding()
+  .setPanelChangeHandler(mapPanelChangedHandler)
   .useFieldConfig()
   .setPanelOptions((builder) => {
-    // Nested
+    let category = ['Map View'];
     builder.addCustomEditor({
-      category: ['Map View'],
-      id: 'view',
-      path: 'view',
-      name: 'Map View',
-      editor: MapViewEditor,
+      category,
+      id: 'view.center',
+      path: 'view.center',
+      name: 'Center',
+      editor: MapCenterEditor,
+      defaultValue: defaultView.center,
     });
 
+    builder.addCustomEditor({
+      category,
+      id: 'view.zoom',
+      path: 'view.zoom',
+      name: 'Initial zoom',
+      editor: MapZoomEditor,
+      defaultValue: defaultView.zoom,
+    });
+
+    builder.addBooleanSwitch({
+      category,
+      path: 'view.shared',
+      description: 'Use the same view across multiple panels.  Note: this may require a dashboard reload.',
+      name: 'Share view',
+      defaultValue: defaultView.shared,
+    });
+
+    // Nested
     builder.addCustomEditor({
       category: ['Base Layer'],
       id: 'basemap',
@@ -27,7 +49,7 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
     });
 
     // Data layer section
-    let category = ['Data Layer'];
+    category = ['Data Layer'];
     builder
       .addCustomEditor({
         category,
@@ -85,36 +107,6 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
         defaultValue: '',
         showIf: (config) =>
           config.layers[0].config?.fieldMapping.queryFormat === 'geohash' && config.layers[0].type === 'circles',
-      })
-      // Circle overlay options
-      .addNumberInput({
-        category,
-        path: 'layers[0].config.minSize',
-        description: 'configures the min circle size',
-        name: 'Min Size',
-        defaultValue: 1,
-        showIf: (config) => config.layers[0].type === 'circles',
-      })
-      .addNumberInput({
-        category,
-        path: 'layers[0].config.maxSize',
-        description: 'configures the max circle size',
-        name: 'Max Size',
-        defaultValue: 10,
-        showIf: (config) => config.layers[0].type === 'circles',
-      })
-      .addSliderInput({
-        category,
-        path: 'layers[0].config.opacity',
-        description: 'configures the amount of transparency',
-        name: 'Opacity',
-        defaultValue: 0.4,
-        settings: {
-          min: 0,
-          max: 1,
-          step: 0.1,
-        },
-        showIf: (config) => config.layers[0].type === 'circles',
       });
 
     // The controls section
@@ -125,6 +117,19 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
         path: 'controls.showZoom',
         description: 'show buttons in the upper left',
         name: 'Show zoom control',
+        defaultValue: true,
+      })
+      .addBooleanSwitch({
+        category,
+        path: 'controls.mouseWheelZoom',
+        name: 'Mouse wheel zoom',
+        defaultValue: true,
+      })
+      .addBooleanSwitch({
+        category,
+        path: 'controls.showLegend',
+        name: 'Show legend',
+        description: 'Show legend',
         defaultValue: true,
       })
       .addBooleanSwitch({

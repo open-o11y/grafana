@@ -85,7 +85,39 @@ export const circlesLayer: MapLayerRegistryItem<CirlceConfig> = {
       },
     };
   },
-
+  // Circle overlay options
+  registerOptionsUI: (builder) => {
+    builder
+      .addNumberInput({
+        path: 'minSize',
+        description: 'configures the min circle size',
+        name: 'Min Size',
+        defaultValue: 1,
+        settings: {
+          placeholder: defaultOptions.minSize,
+        },
+      })
+      .addNumberInput({
+        path: 'maxSize',
+        description: 'configures the max circle size',
+        name: 'Max Size',
+        defaultValue: 10,
+        settings: {
+          placeholder: defaultOptions.maxSize,
+        },
+      })
+      .addSliderInput({
+        path: 'opacity',
+        description: 'configures the amount of transparency',
+        name: 'Opacity',
+        defaultValue: 0.4,
+        settings: {
+          min: 0,
+          max: 1,
+          step: 0.1,
+        },
+      });
+  },
   // fill in the default values
   defaultOptions,
 };
