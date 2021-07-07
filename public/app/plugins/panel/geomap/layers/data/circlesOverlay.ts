@@ -110,6 +110,47 @@ export const circlesLayer: MapLayerRegistryItem<CirlceConfig> = {
           max: 1,
           step: 0.1,
         },
+      })
+      .addSelect({
+        path: 'fieldMapping.queryFormat',
+        name: 'Query Format',
+        defaultValue: 'coordinates',
+        settings: {
+          options: [
+            {
+              value: 'coordinates',
+              label: 'Coordinates',
+            },
+            {
+              value: 'geohash',
+              label: 'Geohash',
+            },
+          ],
+        },
+      })
+      .addTextInput({
+        path: 'fieldMapping.metricField',
+        name: 'Metric Field',
+        defaultValue: '',
+      })
+      .addTextInput({
+        path: 'fieldMapping.latitudeField',
+        name: 'Latitude Field',
+        defaultValue: '',
+        showIf: (config) =>
+          config.fieldMapping.queryFormat === 'coordinates',
+      })
+      .addTextInput({
+        path: 'fieldMapping.longitudeField',
+        name: 'Longitude Field',
+        defaultValue: '',
+        showIf: (config) =>
+          config.fieldMapping.queryFormat === 'coordinates',
+      })
+      .addTextInput({
+        path: 'fieldMapping.geohashField',
+        name: 'Geohash Field',
+        defaultValue: '',
       });
   },
   // fill in the default values

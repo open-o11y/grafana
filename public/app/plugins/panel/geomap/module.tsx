@@ -50,64 +50,13 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
 
     // Data layer section
     category = ['Data Layer'];
-    builder
-      .addCustomEditor({
-        category,
-        id: 'layers',
-        path: 'layers',
-        name: 'Data Layer',
-        editor: DataLayersEditor,
-      })
-      .addSelect({
-        category,
-        path: 'layers[0].config.fieldMapping.queryFormat',
-        name: 'Query Format',
-        defaultValue: 'coordinates',
-        settings: {
-          options: [
-            {
-              value: 'coordinates',
-              label: 'Coordinates',
-            },
-            {
-              value: 'geohash',
-              label: 'Geohash',
-            },
-          ],
-        },
-        showIf: (config) => config.layers[0].type === 'circles',
-      })
-      .addTextInput({
-        category,
-        path: 'layers[0].config.fieldMapping.metricField',
-        name: 'Metric Field',
-        defaultValue: '',
-        showIf: (config) => config.layers[0].type === 'circles',
-      })
-      .addTextInput({
-        category,
-        path: 'layers[0].config.fieldMapping.latitudeField',
-        name: 'Latitude Field',
-        defaultValue: '',
-        showIf: (config) =>
-          config.layers[0].config?.fieldMapping.queryFormat === 'coordinates' && config.layers[0].type === 'circles',
-      })
-      .addTextInput({
-        category,
-        path: 'layers[0].config.fieldMapping.longitudeField',
-        name: 'Longitude Field',
-        defaultValue: '',
-        showIf: (config) =>
-          config.layers[0].config?.fieldMapping.queryFormat === 'coordinates' && config.layers[0].type === 'circles',
-      })
-      .addTextInput({
-        category,
-        path: 'layers[0].config.fieldMapping.geohashField',
-        name: 'Geohash Field',
-        defaultValue: '',
-        showIf: (config) =>
-          config.layers[0].config?.fieldMapping.queryFormat === 'geohash' && config.layers[0].type === 'circles',
-      });
+    builder.addCustomEditor({
+      category,
+      id: 'layers',
+      path: 'layers',
+      name: 'Data Layer',
+      editor: DataLayersEditor,
+    });
 
     // The controls section
     category = ['Map Controls'];
