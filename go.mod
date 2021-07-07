@@ -50,7 +50,7 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/gosimple/slug v1.9.0
-	github.com/grafana/grafana-aws-sdk v0.7.0
+	github.com/grafana/grafana-aws-sdk v0.4.0
 	github.com/grafana/grafana-plugin-sdk-go v0.105.0
 	github.com/grafana/loki v1.6.2-0.20210520072447-15d417efe103
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
@@ -121,3 +121,4 @@ require (
 )
 
 replace github.com/apache/thrift => github.com/apache/thrift v0.14.1
+replace golang.zx2c4.com/wireguard v0.0.20200121 => golang.zx2c4.com/wireguard v0.0.0-20200121152719-05b03c675090
