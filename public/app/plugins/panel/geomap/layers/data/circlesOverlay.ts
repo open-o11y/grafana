@@ -10,14 +10,14 @@ import {Point} from 'ol/geom';
 import { fromLonLat } from 'ol/proj';
 import tinycolor from 'tinycolor2';
 
-export interface CirlceConfig {
+export interface CircleConfig {
   fieldMapping: FieldMappingOptions,
   minSize: number,
   maxSize: number,
   opacity: number,
 }
 
-const defaultOptions: CirlceConfig = {
+const defaultOptions: CircleConfig = {
   fieldMapping: {
     queryFormat: 'coordinates',
     metricField: '',
@@ -30,7 +30,7 @@ const defaultOptions: CirlceConfig = {
   opacity: 0.4,
 };
 
-export const circlesLayer: MapLayerRegistryItem<CirlceConfig> = {
+export const circlesLayer: MapLayerRegistryItem<CircleConfig> = {
   id: 'circles',
   name: 'Circles',
   description: 'creates circle overlays for data values',
@@ -40,7 +40,7 @@ export const circlesLayer: MapLayerRegistryItem<CirlceConfig> = {
    * Function that configures transformation and returns a transformer
    * @param options
    */
-  create: (map: Map, options: MapLayerConfig<CirlceConfig>, theme: GrafanaTheme2): MapLayerHandler => {
+  create: (map: Map, options: MapLayerConfig<CircleConfig>, theme: GrafanaTheme2): MapLayerHandler => {
     const config = { ...defaultOptions, ...options.config };
 
     const vectorLayer = new layer.Vector({});
