@@ -1,6 +1,6 @@
 import { MapLayerRegistryItem, MapLayerConfig, MapLayerHandler, PanelData, GrafanaTheme2 } from '@grafana/data';
 import { dataFrameToLocations } from './utils'
-import { FieldMappingOptions } from '../../types'
+import { FieldMappingOptions, QueryFormat } from '../../types'
 import Map from 'ol/Map';
 import Feature from 'ol/Feature';
 import * as layer from 'ol/layer';
@@ -11,6 +11,7 @@ import { fromLonLat } from 'ol/proj';
 import tinycolor from 'tinycolor2';
 
 export interface CircleConfig {
+  queryFormat: QueryFormat,
   fieldMapping: FieldMappingOptions,
   minSize: number,
   maxSize: number,
@@ -18,8 +19,10 @@ export interface CircleConfig {
 }
 
 const defaultOptions: CircleConfig = {
+  queryFormat: {
+    locationType: 'coordinates',
+  },
   fieldMapping: {
-    queryFormat: 'coordinates',
     metricField: '',
     geohashField: '',
     latitudeField: '',
@@ -112,9 +115,9 @@ export const circlesLayer: MapLayerRegistryItem<CircleConfig> = {
         },
       })
       .addSelect({
-        path: 'fieldMapping.queryFormat',
+        path: 'queryFormat.locationType',
         name: 'Query Format',
-        defaultValue: defaultOptions.fieldMapping.queryFormat,
+        defaultValue: defaultOptions.queryFormat.locationType,
         settings: {
           options: [
             {
@@ -138,21 +141,21 @@ export const circlesLayer: MapLayerRegistryItem<CircleConfig> = {
         name: 'Latitude Field',
         defaultValue: defaultOptions.fieldMapping.latitudeField,
         showIf: (config) =>
-          config.fieldMapping.queryFormat === 'coordinates',
+          config.queryFormat.locationType === 'coordinates',
       })
       .addTextInput({
         path: 'fieldMapping.longitudeField',
         name: 'Longitude Field',
         defaultValue: defaultOptions.fieldMapping.longitudeField,
         showIf: (config) =>
-          config.fieldMapping.queryFormat === 'coordinates',
+          config.queryFormat.locationType === 'coordinates',
       })
       .addTextInput({
         path: 'fieldMapping.geohashField',
         name: 'Geohash Field',
         defaultValue: defaultOptions.fieldMapping.geohashField,
         showIf: (config) =>
-          config.fieldMapping.queryFormat === 'geohash',
+          config.queryFormat.locationType === 'geohash',
       });
   },
   // fill in the default values
