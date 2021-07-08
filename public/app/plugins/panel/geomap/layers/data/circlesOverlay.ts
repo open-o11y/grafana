@@ -92,19 +92,19 @@ export const circlesLayer: MapLayerRegistryItem<CircleConfig> = {
         path: 'minSize',
         description: 'configures the min circle size',
         name: 'Min Size',
-        defaultValue: 1,
+        defaultValue: defaultOptions.minSize,
       })
       .addNumberInput({
         path: 'maxSize',
         description: 'configures the max circle size',
         name: 'Max Size',
-        defaultValue: 10,
+        defaultValue: defaultOptions.maxSize,
       })
       .addSliderInput({
         path: 'opacity',
         description: 'configures the amount of transparency',
         name: 'Opacity',
-        defaultValue: 0.4,
+        defaultValue: defaultOptions.opacity,
         settings: {
           min: 0,
           max: 1,
@@ -114,7 +114,7 @@ export const circlesLayer: MapLayerRegistryItem<CircleConfig> = {
       .addSelect({
         path: 'fieldMapping.queryFormat',
         name: 'Query Format',
-        defaultValue: 'coordinates',
+        defaultValue: defaultOptions.fieldMapping.queryFormat,
         settings: {
           options: [
             {
@@ -131,26 +131,28 @@ export const circlesLayer: MapLayerRegistryItem<CircleConfig> = {
       .addTextInput({
         path: 'fieldMapping.metricField',
         name: 'Metric Field',
-        defaultValue: '',
+        defaultValue: defaultOptions.fieldMapping.metricField,
       })
       .addTextInput({
         path: 'fieldMapping.latitudeField',
         name: 'Latitude Field',
-        defaultValue: '',
+        defaultValue: defaultOptions.fieldMapping.latitudeField,
         showIf: (config) =>
           config.fieldMapping.queryFormat === 'coordinates',
       })
       .addTextInput({
         path: 'fieldMapping.longitudeField',
         name: 'Longitude Field',
-        defaultValue: '',
+        defaultValue: defaultOptions.fieldMapping.longitudeField,
         showIf: (config) =>
           config.fieldMapping.queryFormat === 'coordinates',
       })
       .addTextInput({
         path: 'fieldMapping.geohashField',
         name: 'Geohash Field',
-        defaultValue: '',
+        defaultValue: defaultOptions.fieldMapping.geohashField,
+        showIf: (config) =>
+          config.fieldMapping.queryFormat === 'geohash',
       });
   },
   // fill in the default values
