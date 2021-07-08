@@ -1,15 +1,12 @@
-import { MapLayerRegistryItem, MapLayerConfig, MapLayerHandler, PanelData, GrafanaTheme2 } from '@grafana/data';
-import { dataFrameToLocations } from './utils'
+import { MapLayerRegistryItem, MapLayerConfig, MapLayerHandler, PanelData, GrafanaTheme2, reduceField, ReducerID } from '@grafana/data';
+import { dataFrameToPoints } from './utils'
 import { FieldMappingOptions, QueryFormat } from '../../types'
 import Map from 'ol/Map';
 import Feature from 'ol/Feature';
 import * as layer from 'ol/layer';
 import * as source from 'ol/source';
 import * as style from 'ol/style';
-import {Point} from 'ol/geom';
-import { fromLonLat } from 'ol/proj';
 import tinycolor from 'tinycolor2';
-
 export interface CircleConfig {
   queryFormat: QueryFormat,
   fieldMapping: FieldMappingOptions,
@@ -51,23 +48,35 @@ export const circlesLayer: MapLayerRegistryItem<CircleConfig> = {
       init: () => vectorLayer,
       update: (data: PanelData) => {
         const features: Feature[] = [];
-
+        const dataFrame = data.series[0];
         // Get data values
-        const dataArray = dataFrameToLocations(data.series[0], config);
+        const points = dataFrameToPoints(dataFrame, config);
 
+        // TODO: Find better way to find value field
+        const values = dataFrame.fields.find(a => a.name === config.fieldMapping.metricField);
+        const calcs = reduceField({
+          field: values!,
+          reducers: [
+            ReducerID.min,
+            ReducerID.max,
+            ReducerID.range,
+          ]
+        });
+
+        // TODO: don't directly use buffer
         // Map each data value into new points
-        dataArray.dataValues.map((datapoint) => {
-          // Get circle colors from threshold
-          const color = getColor(data.series[0].fields[0].config, theme, datapoint.value);
-          var colorRBGA = tinycolor(color).toRgb();
+        values!.values.buffer.map((val: any, i: any) => {
+          // Get the circle color for a specific data value depending on color scheme
+          const color = dataFrame.fields[0].display!(val).color;
           // Set the opacity determined from user configuration
-          colorRBGA.a = config.opacity;
+          var fillColor = tinycolor(color).toRgb();
+          fillColor.a = config.opacity;
 
           // Get circle size from user configuration
-          const radius = calcCircleSize(dataArray, datapoint.value, config.minSize, config.maxSize);
-
+          const radius = calcCircleSize(calcs, val, config.minSize, config.maxSize);
+          
           const dot = new Feature({
-              geometry: new Point(fromLonLat([datapoint.latitude, datapoint.longitude])),
+              geometry: points[i],
           });
           dot.setStyle(new style.Style({
             image: new style.Circle({
@@ -75,7 +84,7 @@ export const circlesLayer: MapLayerRegistryItem<CircleConfig> = {
                 color: color,
               }),
               fill: new style.Fill({
-                color: tinycolor(colorRBGA).toString(),
+                color: tinycolor(fillColor).toString(),
               }),
               radius: radius,
             })
@@ -163,23 +172,12 @@ export const circlesLayer: MapLayerRegistryItem<CircleConfig> = {
 };
 
 // Scales the circle size depending on the current data and user defined configurations
-function calcCircleSize(dataArray: any, value: number, minSize: number, maxSize: number) {
-  if (dataArray.valueRange === 0) {
+function calcCircleSize(calcs: any, value: number, minSize: number, maxSize: number) {
+  if (calcs.range === 0) {
     return maxSize;
   }
 
-  const dataFactor = (value - dataArray.lowestValue) / dataArray.valueRange;
+  const dataFactor = (value - calcs.min) / calcs.max;
   const circleSizeRange = maxSize - minSize;
   return circleSizeRange * dataFactor + minSize;
-};
-
-// Returns the color for a specific data value depending on the threshold
-function getColor(config:any, theme: GrafanaTheme2, value: number ) {
-  for (let index = config.thresholds.steps.length; index > 0; index -= 1) {
-    if (value >= config.thresholds.steps[index - 1].value) {
-      var colorName = config.thresholds.steps[index - 1].color;
-      colorName = theme.visualization.getColorByName(colorName);
-      return colorName;
-    }
-  }
 };
