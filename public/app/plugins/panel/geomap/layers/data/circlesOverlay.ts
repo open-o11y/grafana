@@ -46,7 +46,7 @@ export const circlesLayer: MapLayerRegistryItem<CircleConfig> = {
     const vectorLayer = new layer.Vector({});
     return {
       init: () => vectorLayer,
-      update: (map: Map, data: PanelData) => {
+      update: (data: PanelData) => {
         const features: Feature[] = [];
 
         // Get data values
