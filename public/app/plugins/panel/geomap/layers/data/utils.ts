@@ -1,80 +1,44 @@
 import { DataFrame, DataFrameView } from '@grafana/data';
+import { Point } from 'ol/geom';
+import { fromLonLat } from 'ol/proj';
 
-interface locations {
-  lowestValue: number;
-  highestValue: number;
-  valueRange: number;
-  dataValues: location[];
-};
+ /**
+   * Function that formats dataframe into a Point[]
+   */
+export function dataFrameToPoints(frame: DataFrame, config: any): Point[] {
 
-interface location {
-  latitude: number;
-  longitude: number;
-  value: number;
-}
-
-export function dataFrameToLocations(frame: DataFrame, config: any): locations {
-  let dataValues: location[] = [];
-
-  let formattedData: locations = {
-    lowestValue: 0,
-    highestValue: 0,
-    valueRange: 0,
-    dataValues: dataValues,
-  };
+  let points: Point[] = [];
 
   if (frame && frame.length > 0) {
 
-    let lowestValue: number = Number.MAX_VALUE;
-    let highestValue: number = 0;
-
-    // For each data point, create a dataValue
+    // For each data point, create a Point
     const view = new DataFrameView(frame);
-
     view.forEach(row => {
 
-      let lat;
       let lng;
-      let value;
+      let lat;
 
       // Coordinate Data
-      if (config.fieldMapping.queryFormat === "coordinates") {
-        lat = row[config.fieldMapping.latitudeField];
-        lng = row[config.fieldMapping.longitudeField];
+      if (config.queryFormat.locationType === "coordinates") {
+        lng = row[config.fieldMapping.latitudeField];
+        lat = row[config.fieldMapping.longitudeField];
       }
-
       // Geohash Data
-      else if (config.fieldMapping.queryFormat === "geohash"){
-        // Decode Geohash from data for location
+      else if (config.queryFormat.locationType === "geohash"){
         const encodedGeohash = row[config.fieldMapping.geohashField];
         const decodedGeohash = decodeGeohash(encodedGeohash);
-
-        lat = decodedGeohash.latitude;
-        lng = decodedGeohash.longitude;
+        lng = decodedGeohash.latitude;
+        lat = decodedGeohash.longitude;
       }
-
-      // Grab metric from data
-      value = row[config.fieldMapping.metricField];
-
-      // Update highest and lowest value
-      if (value > highestValue) {
-        highestValue = value;
-      }
-      if (value < lowestValue) {
-          lowestValue = value;
-      }
-
-      // For each data point, create a dataValue
-      dataValues.push({latitude: lat, longitude: lng, value: value});
-
+      points.push(new Point(fromLonLat([lng,lat])));
     });
-    formattedData.lowestValue = lowestValue;
-    formattedData.highestValue = highestValue;
-    formattedData.valueRange = highestValue - lowestValue;
   }
-  return formattedData;
+  return points;
 }
 
+ /**
+   * Function that decodes input geohash into latitude and longitude
+   */
 function decodeGeohash(geohash: string) {
   if (!geohash || geohash.length === 0) {
     throw new Error('Missing geohash value');
@@ -107,7 +71,7 @@ function decodeGeohash(geohash: string) {
 
   return { latitude: latCenter, longitude: lonCenter };
 }
-
+  
 function refineInterval(interval: any[], base32Decoded: number, mask: number) {
   /* tslint:disable no-bitwise*/
   if (base32Decoded & mask) {
