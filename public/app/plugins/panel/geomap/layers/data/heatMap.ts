@@ -3,20 +3,21 @@ import Map from 'ol/Map';
 import Feature from 'ol/Feature';
 import * as layer from 'ol/layer';
 import * as source from 'ol/source';
-import {Point} from 'ol/geom';
-import { fromLonLat } from 'ol/proj';
-import { dataFrameToLocations } from './utils'
-import { FieldMappingOptions } from '../../types'
+import { dataFrameToPoints } from './utils'
+import { FieldMappingOptions, QueryFormat } from '../../types'
 
 export interface HeatmapConfig {
+  queryFormat: QueryFormat
   fieldMapping: FieldMappingOptions,
   blur: number;
   radius: number;
 }
 
 const defaultOptions: HeatmapConfig = {
+  queryFormat: {
+    locationType: 'coordinates',
+  },
   fieldMapping: {
-    queryFormat: 'coordinates',
     metricField: '',
     geohashField: '',
     latitudeField: '',
@@ -55,12 +56,13 @@ export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
         });
 
         // Get data values
-        const dataArray = dataFrameToLocations(data.series[0], config);
+        const frame = data.series[0];
+        const points = dataFrameToPoints(frame, config);
 
         // Map each data value into new points
-        dataArray.dataValues.map((datapoint) => {
+        points.map((point, i) => {
           const cluster = new Feature({
-              geometry: new Point(fromLonLat([datapoint.latitude, datapoint.longitude])),
+              geometry: point,
           });
           vectorSource.addFeature(cluster);
         });
@@ -94,9 +96,9 @@ export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
         },
       })
       .addSelect({
-        path: 'fieldMapping.queryFormat',
+        path: 'queryFormat.locationType',
         name: 'Query Format',
-        defaultValue: defaultOptions.fieldMapping.queryFormat,
+        defaultValue: defaultOptions.queryFormat.locationType,
         settings: {
           options: [
             {
@@ -120,21 +122,21 @@ export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
         name: 'Latitude Field',
         defaultValue: defaultOptions.fieldMapping.latitudeField,
         showIf: (config) =>
-          config.fieldMapping.queryFormat === 'coordinates',
+          config.queryFormat.locationType === 'coordinates',
       })
       .addTextInput({
         path: 'fieldMapping.longitudeField',
         name: 'Longitude Field',
         defaultValue: defaultOptions.fieldMapping.longitudeField,
         showIf: (config) =>
-          config.fieldMapping.queryFormat === 'coordinates',
+          config.queryFormat.locationType === 'coordinates',
       })
       .addTextInput({
         path: 'fieldMapping.geohashField',
         name: 'Geohash Field',
         defaultValue: defaultOptions.fieldMapping.geohashField,
         showIf: (config) =>
-          config.fieldMapping.queryFormat === 'geohash',
+          config.queryFormat.locationType === 'geohash',
       });
   },
 
