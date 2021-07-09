@@ -50,12 +50,16 @@ export interface GeomapPanelOptions {
   basemap: MapLayerConfig;
   layers: MapLayerConfig[];
   fieldMapping: FieldMappingOptions;
+  queryFormat: QueryFormat;
 }
 
 export interface FieldMappingOptions {
-  queryFormat: string;
   metricField: string;
   geohashField: string;
   latitudeField: string;
   longitudeField: string;
+}
+
+export interface QueryFormat {
+  locationType: string;
 }
