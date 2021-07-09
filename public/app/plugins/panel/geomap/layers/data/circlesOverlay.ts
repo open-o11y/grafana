@@ -1,4 +1,4 @@
-import { DataFrameView, MapLayerRegistryItem, MapLayerConfig, MapLayerHandler, PanelData, GrafanaTheme2, reduceField, ReducerID, Field, Vector } from '@grafana/data';
+import { MapLayerRegistryItem, MapLayerConfig, MapLayerHandler, PanelData, GrafanaTheme2, reduceField, ReducerID } from '@grafana/data';
 import { dataFrameToPoints } from './utils'
 import { FieldMappingOptions, QueryFormat } from '../../types'
 import Map from 'ol/Map';
@@ -51,7 +51,7 @@ export const circlesLayer: MapLayerRegistryItem<CircleConfig> = {
         const frame = data.series[0];
 
         // Get data values
-        const points = dataFrameToPoints(frame, config);
+        const points = dataFrameToPoints(frame, config.fieldMapping, config.queryFormat);
         const field = frame.fields.find(field => field.name === config.fieldMapping.metricField);
         // Return early if metric field is not matched
         if (field === undefined) {
