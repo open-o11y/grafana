@@ -1,4 +1,4 @@
-import { MapLayerRegistryItem, MapLayerConfig, MapLayerHandler, PanelData, GrafanaTheme2, reduceField, ReducerID } from '@grafana/data';
+import { DataFrameView, MapLayerRegistryItem, MapLayerConfig, MapLayerHandler, PanelData, GrafanaTheme2, reduceField, ReducerID } from '@grafana/data';
 import { dataFrameToPoints } from './utils'
 import { FieldMappingOptions, QueryFormat } from '../../types'
 import Map from 'ol/Map';
@@ -48,14 +48,13 @@ export const circlesLayer: MapLayerRegistryItem<CircleConfig> = {
       init: () => vectorLayer,
       update: (data: PanelData) => {
         const features: Feature[] = [];
-        const dataFrame = data.series[0];
-        // Get data values
-        const points = dataFrameToPoints(dataFrame, config);
+        const frame = data.series[0];
 
-        // TODO: Find better way to find value field
-        const values = dataFrame.fields.find(a => a.name === config.fieldMapping.metricField);
+        // Get data values
+        const points = dataFrameToPoints(frame, config);
+        const values = frame.fields.find(field => field.name === config.fieldMapping.metricField)!;
         const calcs = reduceField({
-          field: values!,
+          field: values,
           reducers: [
             ReducerID.min,
             ReducerID.max,
@@ -63,17 +62,16 @@ export const circlesLayer: MapLayerRegistryItem<CircleConfig> = {
           ]
         });
 
-        // TODO: don't directly use buffer
         // Map each data value into new points
-        values!.values.buffer.map((val: any, i: any) => {
+        for (let i = 0; i < frame.length; i++) {
           // Get the circle color for a specific data value depending on color scheme
-          const color = dataFrame.fields[0].display!(val).color;
+          const color = frame.fields[0].display!(values.values.get(i)).color;
           // Set the opacity determined from user configuration
           var fillColor = tinycolor(color).toRgb();
           fillColor.a = config.opacity;
 
           // Get circle size from user configuration
-          const radius = calcCircleSize(calcs, val, config.minSize, config.maxSize);
+          const radius = calcCircleSize(calcs, values!.values.get(i), config.minSize, config.maxSize);
           
           const dot = new Feature({
               geometry: points[i],
@@ -90,7 +88,7 @@ export const circlesLayer: MapLayerRegistryItem<CircleConfig> = {
             })
           }));
           features.push(dot);
-        });
+        };
 
         const vectorSource = new source.Vector({ features });
         vectorLayer.setSource(vectorSource);
