@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { geomapLayerRegistry } from './layers/registry';
-import { Map as GeoMap, View } from 'ol';
+import { Map, View } from 'ol';
 import Attribution from 'ol/control/Attribution';
 import Zoom from 'ol/control/Zoom';
 import ScaleLine from 'ol/control/ScaleLine';
@@ -11,8 +11,6 @@ import MouseWheelZoom from 'ol/interaction/MouseWheelZoom';
 import { PanelData, MapLayerHandler, MapLayerConfig, PanelProps, GrafanaTheme } from '@grafana/data';
 import { config } from '@grafana/runtime';
 
-import 'ol/ol.css';
-
 import { ControlsOptions, GeomapPanelOptions, MapViewConfig } from './types';
 import { defaultGrafanaThemedMap } from './layers/basemaps';
 import { centerPointRegistry, MapCenterID } from './view';
@@ -22,6 +20,8 @@ import { css } from '@emotion/css';
 import { stylesFactory } from '@grafana/ui';
 import { GeomapOverlay, OverlayProps } from './GeomapOverlay';
 import { DebugOverlay } from './components/DebugOverlay';
+import { getGlobalStyles } from './globalStyles';
+import { Global } from '@emotion/react';
 
 interface MapLayerState {
   config: MapLayerConfig;
@@ -29,23 +29,20 @@ interface MapLayerState {
   layer: BaseLayer; // used to add|remove
 }
 
-// The firs one will be reused
+// Allows multiple panels to share the same view instance
 let sharedView: View | undefined = undefined;
 
 type Props = PanelProps<GeomapPanelOptions>;
-
 export class GeomapPanel extends Component<Props> {
-  map: GeoMap;
+  globalCSS = getGlobalStyles(config.theme2);
+
+  map: Map;
 
   basemap: BaseLayer;
   layers: MapLayerState[] = [];
   mouseWheelZoom: MouseWheelZoom;
   style = getStyles(config.theme);
   overlayProps: OverlayProps = {};
-
-  constructor(props: Props) {
-    super(props);
-  }
 
   shouldComponentUpdate(nextProps: Props) {
     if (!this.map) {
@@ -125,11 +122,11 @@ export class GeomapPanel extends Component<Props> {
     }
 
     if (!div) {
-      this.map = (undefined as unknown) as GeoMap;
+      this.map = (undefined as unknown) as Map;
       return;
     }
     const { options } = this.props;
-    this.map = new GeoMap({
+    this.map = new Map({
       view: this.initMapView(options.view),
       pixelRatio: 1, // or zoom?
       layers: [], // loaded explicitly below
@@ -270,10 +267,13 @@ export class GeomapPanel extends Component<Props> {
 
   render() {
     return (
-      <div className={this.style.wrap}>
-        <div className={this.style.map} ref={this.initMapRef}></div>
-        <GeomapOverlay {...this.overlayProps} />
-      </div>
+      <>
+        <Global styles={this.globalCSS} />
+        <div className={this.style.wrap}>
+          <div className={this.style.map} ref={this.initMapRef}></div>
+          <GeomapOverlay {...this.overlayProps} />
+        </div>
+      </>
     );
   }
 }
