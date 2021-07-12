@@ -1,4 +1,4 @@
-import { MapLayerRegistryItem, MapLayerConfig, MapLayerHandler, PanelData, GrafanaTheme2 } from '@grafana/data';
+import { MapLayerRegistryItem, MapLayerConfig, MapLayerHandler, PanelData, GrafanaTheme2, reduceField, ReducerID, FieldCalcs } from '@grafana/data';
 import Map from 'ol/Map';
 import Feature from 'ol/Feature';
 import * as layer from 'ol/layer';
@@ -44,6 +44,10 @@ export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
       source: vectorSource,
       blur: config.blur,
       radius: config.radius,
+      weight: function (feature) {
+        var weight = feature.get('value');
+        return weight;
+      },
     });
 
     return {
@@ -57,12 +61,28 @@ export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
 
         // Get data values
         const frame = data.series[0];
-        const points = dataFrameToPoints(frame, config);
 
+        // Get data values
+        const points = dataFrameToPoints(frame, config.fieldMapping, config.queryFormat);
+        const field = frame.fields.find(field => field.name === config.fieldMapping.metricField);
+        // Return early if metric field is not matched
+        if (field === undefined) {
+          return;
+        };
+
+        const calcs = reduceField({
+          field: field,
+          reducers: [
+            ReducerID.min,
+            ReducerID.max,
+            ReducerID.range,
+          ]
+        });
         // Map each data value into new points
         points.map((point, i) => {
           const cluster = new Feature({
               geometry: point,
+              value: normalize(calcs, field.values.get(i)),
           });
           vectorSource.addFeature(cluster);
         });
@@ -142,4 +162,9 @@ export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
 
   // fill in the default values
   defaultOptions,
+};
+
+// Normalize the data values to a range between 0 and 1
+function normalize(calcs: FieldCalcs, value: number) {
+  return (value - calcs.min) / calcs.range;
 };
