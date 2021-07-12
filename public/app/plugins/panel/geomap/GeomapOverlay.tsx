@@ -5,8 +5,8 @@ import { stylesFactory } from '@grafana/ui';
 import { css } from '@emotion/css';
 
 export interface OverlayProps {
-  topRight?: React.ReactElement[];
-  bottomLeft?: React.ReactElement[];
+  topRight?: React.ReactNode[];
+  bottomLeft?: React.ReactNode[];
 }
 
 export class GeomapOverlay extends PureComponent<OverlayProps> {
@@ -20,8 +20,8 @@ export class GeomapOverlay extends PureComponent<OverlayProps> {
     const { topRight, bottomLeft } = this.props;
     return (
       <div className={this.style.overlay}>
-        {topRight?.length && <div className={this.style.TR}>{topRight}</div>}
-        {bottomLeft?.length && <div className={this.style.BL}>{bottomLeft}</div>}
+        {Boolean(topRight?.length) && <div className={this.style.TR}>{topRight}</div>}
+        {Boolean(bottomLeft?.length) && <div className={this.style.BL}>{bottomLeft}</div>}
       </div>
     );
   }
