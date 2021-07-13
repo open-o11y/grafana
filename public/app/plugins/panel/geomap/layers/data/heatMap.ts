@@ -78,8 +78,9 @@ export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
           vectorLayer.getSource().removeFeature(feature);
         });
 
-        // Get data values
+        // Get data points (latitude and longitude coordinates)
         const points = dataFrameToPoints(frame, config.fieldMapping, config.queryFormat);
+        // Get the field of data values
         const field = frame.fields.find(field => field.name === config.fieldMapping.metricField);
         // Return early if metric field is not matched
         if (field === undefined) {
@@ -105,12 +106,15 @@ export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
         });
         vectorLayer.setSource(vectorSource);
 
-        // Set gradient of heatmap 
-        const mode = getFieldColorModeForField(field);
-        if (mode.isContinuous && mode.getColors) {
+        // Set gradient of heatmap
+        const colorMode = getFieldColorModeForField(field);
+        if (colorMode.isContinuous && colorMode.getColors) {
           // getColors return an array of color string from the color scheme chosen
-          const colors = mode.getColors(theme);
+          const colors = colorMode.getColors(theme);
           vectorLayer.setGradient(colors);
+        } else {
+          // Set the gradient back to default if threshold or single color is chosen
+          vectorLayer.setGradient(['#00f', '#0ff', '#0f0', '#ff0', '#f00']);
         }
       },
     };
