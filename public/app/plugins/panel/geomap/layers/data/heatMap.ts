@@ -1,4 +1,4 @@
-import { MapLayerRegistryItem, MapLayerConfig, MapLayerHandler, PanelData, GrafanaTheme2, reduceField, ReducerID, FieldCalcs } from '@grafana/data';
+import { MapLayerRegistryItem, MapLayerConfig, MapLayerHandler, PanelData, GrafanaTheme2, reduceField, ReducerID, FieldCalcs, getFieldColorModeForField } from '@grafana/data';
 import Map from 'ol/Map';
 import Feature from 'ol/Feature';
 import * as layer from 'ol/layer';
@@ -94,6 +94,14 @@ export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
           vectorSource.addFeature(cluster);
         });
         vectorLayer.setSource(vectorSource);
+
+        // Set gradient of heatmap 
+        const mode = getFieldColorModeForField(field);
+        if (mode.isContinuous && mode.getColors) {
+          // getColors return an array of color string from the color scheme chosen
+          const colors = mode.getColors(theme);
+          vectorLayer.setGradient(colors);
+        }
       },
     };
   },
