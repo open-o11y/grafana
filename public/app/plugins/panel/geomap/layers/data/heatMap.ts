@@ -6,6 +6,7 @@ import * as source from 'ol/source';
 import { dataFrameToPoints } from './utils'
 import { FieldMappingOptions, QueryFormat } from '../../types'
 
+// Configuration options for Heatmap overlays
 export interface HeatmapConfig {
   queryFormat: QueryFormat
   fieldMapping: FieldMappingOptions,
@@ -27,6 +28,9 @@ const defaultOptions: HeatmapConfig = {
   radius: 5,
 };
 
+/**
+ * Map layer configuration for heatmap overlay
+ */
 export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
   id: 'heatmap',
   name: 'Heatmap',
@@ -40,6 +44,9 @@ export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
   create: (map: Map, options: MapLayerConfig<HeatmapConfig>, theme: GrafanaTheme2): MapLayerHandler => {
     const config = { ...defaultOptions, ...options.config };
     const vectorSource = new source.Vector();
+
+    // Create a new Heatmap layer
+    // Weight function takes a feature as attribute and returns a weight value in the range of 0-1
     const vectorLayer = new layer.Heatmap({
       source: vectorSource,
       blur: config.blur,
@@ -53,14 +60,13 @@ export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
     return {
       init: () => vectorLayer,
       update: (data: PanelData) => {
+        const frame = data.series[0];
+
         // Remove previous data before updating
-        var features = vectorLayer.getSource().getFeatures();
+        const features = vectorLayer.getSource().getFeatures();
         features.forEach((feature) => {
           vectorLayer.getSource().removeFeature(feature);
         });
-
-        // Get data values
-        const frame = data.series[0];
 
         // Get data values
         const points = dataFrameToPoints(frame, config.fieldMapping, config.queryFormat);
@@ -70,6 +76,7 @@ export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
           return;
         };
 
+        // Retrieve the min, max and range of data values
         const calcs = reduceField({
           field: field,
           reducers: [
@@ -164,7 +171,10 @@ export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
   defaultOptions,
 };
 
-// Normalize the data values to a range between 0 and 1
+/**
+ * Function that normalize the data values to a range between 0 and 1
+ * Returns the weights for each value input
+ */
 function normalize(calcs: FieldCalcs, value: number) {
   return (value - calcs.min) / calcs.range;
 };
