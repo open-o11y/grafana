@@ -1,4 +1,14 @@
-import { MapLayerRegistryItem, MapLayerConfig, MapLayerHandler, PanelData, GrafanaTheme2, reduceField, ReducerID, FieldCalcs, getFieldColorModeForField } from '@grafana/data';
+import {
+  FieldCalcs,
+  getFieldColorModeForField,
+  GrafanaTheme2,
+  MapLayerConfig,
+  MapLayerHandler,
+  MapLayerRegistryItem,
+  PanelData,
+  reduceField,
+  ReducerID,
+} from '@grafana/data';
 import Map from 'ol/Map';
 import Feature from 'ol/Feature';
 import * as layer from 'ol/layer';
