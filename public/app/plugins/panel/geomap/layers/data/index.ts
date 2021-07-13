@@ -1,4 +1,4 @@
-import { circlesLayer } from './circlesOverlay';
+import { markersLayer } from './markersLayer';
 import { geojsonMapper } from './geojsonMapper';
 import { heatmapLayer } from './heatMap';
 import { lastPointTracker } from './lastPointTracker';
@@ -7,7 +7,7 @@ import { lastPointTracker } from './lastPointTracker';
  * Registry for layer handlers
  */
 export const dataLayers = [
-    circlesLayer,
+    markersLayer,
     heatmapLayer,
     lastPointTracker,
     geojsonMapper, // dummy for now
