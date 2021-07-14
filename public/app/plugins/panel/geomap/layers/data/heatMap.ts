@@ -197,7 +197,6 @@ export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
  * Returns the weights for each value input
  */
 function normalize(calcs: FieldCalcs, value: number) {
-  console.log((value - calcs.min) / calcs.range);
   // If value is the min value, it should return a small weight but not zero
   if (value == calcs.min) {
     return 0.01;
