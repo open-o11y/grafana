@@ -92,7 +92,6 @@ export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
           field: field,
           reducers: [
             ReducerID.min,
-            ReducerID.max,
             ReducerID.range,
           ]
         });
@@ -122,28 +121,6 @@ export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
   // Heatmap overlay options
   registerOptionsUI: (builder) => {
     builder
-      .addSliderInput({
-        path: 'radius',
-        description: 'configures the size of clusters',
-        name: 'Radius',
-        defaultValue: defaultOptions.radius,
-        settings: {
-            min: 1,
-            max: 50,
-            step: 1,
-        },
-      })
-      .addSliderInput({
-        path: 'blur',
-        description: 'configures the amount of blur of clusters',
-        name: 'Blur',
-        defaultValue: defaultOptions.blur,
-        settings: {
-          min: 1,
-          max: 50,
-          step: 1,
-        },
-      })
       .addSelect({
         path: 'queryFormat.locationType',
         name: 'Query Format',
@@ -186,6 +163,28 @@ export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
         defaultValue: defaultOptions.fieldMapping.geohashField,
         showIf: (config) =>
           config.queryFormat.locationType === 'geohash',
+      })
+      .addSliderInput({
+        path: 'radius',
+        description: 'configures the size of clusters',
+        name: 'Radius',
+        defaultValue: defaultOptions.radius,
+        settings: {
+            min: 1,
+            max: 50,
+            step: 1,
+        },
+      })
+      .addSliderInput({
+        path: 'blur',
+        description: 'configures the amount of blur of clusters',
+        name: 'Blur',
+        defaultValue: defaultOptions.blur,
+        settings: {
+          min: 1,
+          max: 50,
+          step: 1,
+        },
       });
   },
 
@@ -198,5 +197,15 @@ export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
  * Returns the weights for each value input
  */
 function normalize(calcs: FieldCalcs, value: number) {
+  console.log((value - calcs.min) / calcs.range);
+  // If value is the min value, it should return a small weight but not zero
+  if (value == calcs.min) {
+    return 0.01;
+  };
+  // If all data values are the same, it should return the largest weight
+  if (calcs.range == 0) {
+    return 1;
+  };
+  // Normalize value in range of (0,1]
   return (value - calcs.min) / calcs.range;
 };
