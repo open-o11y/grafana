@@ -56,7 +56,7 @@ export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
     const vectorSource = new source.Vector();
 
     // Create a new Heatmap layer
-    // Weight function takes a feature as attribute and returns a weight value in the range of 0-1
+    // Weight function takes a feature as attribute and returns a normalized weight value
     const vectorLayer = new layer.Heatmap({
       source: vectorSource,
       blur: config.blur,
@@ -193,18 +193,15 @@ export const heatmapLayer: MapLayerRegistryItem<HeatmapConfig> = {
 };
 
 /**
- * Function that normalize the data values to a range between 0 and 1
+ * Function that normalize the data values to a range between 0.1 and 1
  * Returns the weights for each value input
  */
 function normalize(calcs: FieldCalcs, value: number) {
-  // If value is the min value, it should return a small weight but not zero
-  if (value == calcs.min) {
-    return 0.01;
-  };
   // If all data values are the same, it should return the largest weight
   if (calcs.range == 0) {
     return 1;
   };
-  // Normalize value in range of (0,1]
-  return (value - calcs.min) / calcs.range;
+  // Normalize value in range of [0.1,1]
+  const norm = 0.1 + ((value - calcs.min) / calcs.range) * 0.9
+  return norm;
 };
